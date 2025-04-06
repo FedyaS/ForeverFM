@@ -6,7 +6,7 @@ load_dotenv()
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-def createAudio(text: str = "", voice: str = "Aaliyah-PlayAI", file_path: str = "audio/out.wav", mock: bool = True, mock_number: int = 0) -> None:
+def createAudio(text: str = "", voice: str = "Aaliyah-PlayAI", file_path: str = "audio/out.wav", mock: bool = True, mock_number: str = '0') -> None:
     if mock:
         mock_audio_path = f"mock_data/audio/mock_audio{mock_number}.wav"
         try:

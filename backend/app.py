@@ -16,6 +16,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")  # Allow CORS for Next.js fro
 # Some stupid globals
 MOCKING = True
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MAX_Q_SIZE = 10
+should_be_generating_new_data = True
 
 # Shared variables
 conv_topic = "Initial Topic"
@@ -48,6 +50,20 @@ def continousMakeTranscript():
             scripts.append(new_script)
             if len(scripts) >= 10:
                 scripts.pop(0)
+            len_scripts = len(scripts)
+        
+        if len_scripts < MAX_Q_SIZE and should_be_generating_new_data:
+            # Send only the last 4 scripts for context
+            new_script = generateContent.generateContent(scripts[-4:], conv_topic, mock=MOCKING, mock_number=MOCK_NUMBER)
+            new_script['mock_number'] = MOCK_NUMBER
+            new_script['is_audio_generated'] = False
+            
+            if MOCKING:
+                MOCK_NUMBER += 1
+                if MOCK_NUMBER > 7:
+                    MOCK_NUMBER = 0
+            
+            # new_script = {'speaker_name': 'Chip', 'text': 'blah blah blah', is_audio_generated: False}
 
         # Just to test:
         with user_prompts_lock:
@@ -64,8 +80,11 @@ def continousMakeAudio():
             if len(scripts) >= 1:
                 script = scripts[0]
         
-        script = {'speaker_name': 'Aaliyah', 'text': 'blah blah'} # Mock
-        if script:
+        # script = {'speaker_name': 'Aaliyah', 'text': 'blah blah'} # Mock
+        if script and should_be_generating_new_data:
+            # Generate our audio
+            new_file_name = f'{round(time.time() * 10)}_audio.wav'
+            groqAudio.createAudio(script['text'], f'{script['speaker_name']}-PlayAI', f'audio/{new_file_name}', MOCKING, script['mock_number'])
             
             # new_file_name = 'speech.wav' # For now
             new_file_name = f'mock_audio{mock_audio_count}.wav'
@@ -97,12 +116,49 @@ def continousMakeAudio():
         
 
 def continousManageTopic():
-    pass # for now
-    # while True:
-    #     time.sleep(5)  # Simulate time taken for processing
-    #     with lock:
-    #         if scripts:
-    #             convTopic = f"Updated Topic based on: {scripts[-1]}"
+    global should_be_generating_new_data, conv_topic, scripts, audio
+    while True:
+        new_up = None
+        with user_prompts_lock:
+            if user_prompts:
+                new_up = user_prompts[0]
+                user_prompts.pop(0)
+        
+        if new_up:
+            print(f'Handling new user prompt from {new_up['user_name']} text: {new_up['text']}')
+            new_topic = generateContent.determineNewTopic(new_up['text'], MOCKING)
+            if new_topic:
+                should_be_generating_new_data = False
+                latest_spoken_script = []
+                with scripts_lock:
+                    if scripts:
+                        latest_spoken_script = scripts[0]
+                old_topic = ''
+                with conv_topic_lock:
+                    old_topic = conv_topic
+                    
+                transition_script = generateContent.generateNewTopicContent(new_up['text'], new_up['user_name'], latest_spoken_script, old_topic, new_topic, MOCKING)
+                transition_script['is_audio_generated'] = False
+                transition_script['mock_number'] = 'transition'
+
+                if transition_script['speaker_name'] != 'System':
+                    # Reset all vars lol
+                    with conv_topic_lock:
+                        conv_topic = new_topic
+                        print(f'New Topic is set to: {new_topic}')
+                    with scripts_lock:
+                        scripts = [transition_script]
+                        print(f'Scripts is now {len(scripts)} long')
+                    with audio_lock:
+                        audio = audio[:2] # May need to change the logic here
+                        print(f'Audio is now {len(audio)} long')
+                should_be_generating_new_data = True
+                broadcastNewTopic(new_topic)
+        
+        time.sleep(3) # may need to adjust
+
+def broadcastNewTopic(new_topic):
+    socketio.emit("new_topic", {"new_topic": new_topic})
 
 def broadcastPlaybackState(playback, elapsed):
     """Broadcasts playback updates using a snapshot and precomputed elapsed time."""
@@ -285,7 +341,7 @@ def chat_prompt():
     
     if user_input:
         with user_prompts_lock:
-            user_prompts.append(user_input)
+            user_prompts.append({"user_name": "Some UserName", "text": user_input})
 
     return jsonify({"message": "Prompt added to queue"}), 200
 
