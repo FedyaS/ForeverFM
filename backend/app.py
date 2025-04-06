@@ -84,7 +84,7 @@ def continousMakeAudio():
         # script = {'speaker_name': 'Aaliyah', 'text': 'blah blah'} # Mock
         if script and should_be_generating_new_data:
             # Generate our audio
-            new_file_name = f"{round(time.time() * 10)}_audio.wav'
+            new_file_name = f"{round(time.time() * 10)}_audio.wav"
             groqAudio.createAudio(script['text'], f"{script['speaker_name']}-PlayAI", f"audio/{new_file_name}", MOCKING, script['mock_number'])
             
             duration = get_wav_duration(new_file_name)
