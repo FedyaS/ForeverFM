@@ -84,8 +84,8 @@ def continousMakeAudio():
         # script = {'speaker_name': 'Aaliyah', 'text': 'blah blah'} # Mock
         if script and should_be_generating_new_data:
             # Generate our audio
-            new_file_name = f'{round(time.time() * 10)}_audio.wav'
-            groqAudio.createAudio(script['text'], f'{script['speaker_name']}-PlayAI', f'audio/{new_file_name}', MOCKING, script['mock_number'])
+            new_file_name = f"{round(time.time() * 10)}_audio.wav'
+            groqAudio.createAudio(script['text'], f"{script['speaker_name']}-PlayAI", f"audio/{new_file_name}", MOCKING, script['mock_number'])
             
             duration = get_wav_duration(new_file_name)
             new_audio_object = {
@@ -126,7 +126,7 @@ def continousManageTopic():
                 user_prompts.pop(0)
         
         if new_up:
-            print(f'Handling new user prompt from {new_up['user_name']} text: {new_up['text']}')
+            print(f"Handling new user prompt from {new_up['user_name']} text: {new_up['text']}")
             new_topic = generateContent.determineNewTopic(new_up['text'], MOCKING)
             if new_topic:
                 should_be_generating_new_data = False
@@ -146,13 +146,13 @@ def continousManageTopic():
                     # Reset all vars lol
                     with conv_topic_lock:
                         conv_topic = new_topic
-                        print(f'New Topic is set to: {new_topic}')
+                        print(f"New Topic is set to: {new_topic}")
                     with scripts_lock:
                         scripts = [transition_script]
-                        print(f'Scripts is now {len(scripts)} long')
+                        print(f"Scripts is now {len(scripts)} long")
                     with audio_lock:
                         audio = audio[:2] # May need to change the logic here
-                        print(f'Audio is now {len(audio)} long')
+                        print(f"Audio is now {len(audio)} long")
                 should_be_generating_new_data = True
                 broadcastNewTopic(new_topic)
         
