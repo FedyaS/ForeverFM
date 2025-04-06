@@ -6,57 +6,36 @@ import io from "socket.io-client";
 export default function AudioPlayer() {
   const [transcript, setTranscript] = useState("");
   const [position, setPosition] = useState({ elapsed: 0, duration: 0 });
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isReady, setIsReady] = useState(false);
 
   const audioContextRef = useRef(null);
   const socketRef = useRef(null);
   const queueRef = useRef([]); // Queue of decoded AudioBuffers
+  const isPlayingRef = useRef(false);
   const currentSourceRef = useRef(null);
   const startTimeRef = useRef(null);
-  const offsetTimeRef = useRef(0);
-  const gainNodeRef = useRef(null);
-
-  const togglePlayback = () => {
-    if (!audioContextRef.current) {
-      // Create audio context on first interaction
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      gainNodeRef.current = audioContextRef.current.createGain();
-      gainNodeRef.current.connect(audioContextRef.current.destination);
-      setIsReady(true);
-    }
-  
-    // Toggle mute instead of stopping the audio
-    if (isPlaying) {
-      gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime); // mute
-      setIsPlaying(false);
-    } else {
-      gainNodeRef.current.gain.setValueAtTime(1, audioContextRef.current.currentTime); // unmute
-      setIsPlaying(true);
-      offsetTimeRef.current = position.elapsed;
-      playNextInQueue();
-    }
-  };  
 
   const playNextInQueue = () => {
-    if (queueRef.current.length === 0) return;
-  
+    if (queueRef.current.length === 0 || isPlayingRef.current) return;
+
     const buffer = queueRef.current.shift();
     const source = audioContextRef.current.createBufferSource();
     source.buffer = buffer;
-    source.connect(gainNodeRef.current); // route through gain node
-  
+    source.connect(audioContextRef.current.destination);
+
     source.onended = () => {
-      playNextInQueue(); // Always continue playback
+      isPlayingRef.current = false;
+      playNextInQueue(); // Play the next audio if available
     };
-  
+
     source.start(0);
     currentSourceRef.current = source;
     startTimeRef.current = audioContextRef.current.currentTime;
+    isPlayingRef.current = true;
   };
-  
 
   useEffect(() => {
+    audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+
     // Connect to the WebSocket server
     socketRef.current = io("http://localhost:5001"); // Use http:// for Socket.IO
 
@@ -69,18 +48,13 @@ export default function AudioPlayer() {
     });
 
     socketRef.current.on("audio", (data) => {
-      // Only decode and queue audio if we have an audio context
-      if (audioContextRef.current) {
-        const audioBinaryData = new Uint8Array(data.data);
-        audioContextRef.current.decodeAudioData(audioBinaryData.buffer)
-          .then((decodedBuffer) => {
-            queueRef.current.push(decodedBuffer);
-            if (isPlaying) {
-              playNextInQueue(); // Try playing if currently playing
-            }
-          })
-          .catch((err) => console.error("Audio decode error:", err));
-      }
+      const audioBinaryData = new Uint8Array(data.data);
+      audioContextRef.current.decodeAudioData(audioBinaryData.buffer)
+        .then((decodedBuffer) => {
+          queueRef.current.push(decodedBuffer);
+          playNextInQueue(); // Try playing if not already playing
+        })
+        .catch((err) => console.error("Audio decode error:", err));
     });
 
     socketRef.current.on("transcript", (data) => {
@@ -94,7 +68,7 @@ export default function AudioPlayer() {
     return () => {
       socketRef.current.disconnect();
       if (currentSourceRef.current) {
-        //currentSourceRef.current.stop();
+        currentSourceRef.current.stop();
       }
       if (audioContextRef.current) {
         audioContextRef.current.close();
@@ -102,59 +76,23 @@ export default function AudioPlayer() {
     };
   }, []);
 
-  // Effect to manage playback state
-  useEffect(() => {
-    if (isReady && isPlaying) {
-      playNextInQueue();
-    }
-  }, [isReady, isPlaying]);
-
   return (
-    <div style={{ padding: "20px", maxWidth: "600px", margin: "0 auto" }}>
+    <div style={{ padding: "20px" }}>
       <h1>ForeverFM Player</h1>
-      <div style={{ marginBottom: "20px" }}>
-        <button 
-          onClick={togglePlayback}
-          style={{
-            padding: "10px 20px",
-            fontSize: "16px",
-            backgroundColor: isPlaying ? "#ff5555" : "#55aa55",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer"
-          }}
-        >
-          {isPlaying ? "Pause" : "Play"}
-        </button>
-        <span style={{ marginLeft: "15px", fontSize: "14px" }}>
-          Current time: {Math.floor(position.elapsed / 60)}:{String(Math.floor(position.elapsed % 60)).padStart(2, '0')}
-        </span>
+      <div>
+        <h3>Transcript</h3>
+        <p>{transcript || "Waiting for transcript..."}</p>
       </div>
       <div>
         <h3>Playback Position</h3>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <progress
-            value={position.elapsed}
-            max={position.duration || 100}
-            style={{ width: "100%", height: "15px" }}
-          />
-        </div>
+        <progress
+          value={position.elapsed}
+          max={position.duration}
+          style={{ width: "100%" }}
+        />
         <p>
-          {Math.floor(position.elapsed / 60)}:{String(Math.floor(position.elapsed % 60)).padStart(2, '0')} / 
-          {Math.floor(position.duration / 60)}:{String(Math.floor(position.duration % 60)).padStart(2, '0')}
+          {Math.round(position.elapsed)}s / {Math.round(position.duration)}s
         </p>
-      </div>
-      <div>
-        <h3>Transcript</h3>
-        <div style={{ 
-          padding: "15px", 
-          backgroundColor: "#f5f5f5", 
-          borderRadius: "5px",
-          minHeight: "100px"
-        }}>
-          {transcript || "Waiting for transcript..."}
-        </div>
       </div>
     </div>
   );

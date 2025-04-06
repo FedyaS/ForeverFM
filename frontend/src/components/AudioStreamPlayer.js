@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import styles from "./AudioStreamPlayer.module.css";
-import io from "socket.io-client";
 
 export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/audio" }) {
   const [transcript, setTranscript] = useState("");
@@ -10,7 +9,9 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [volume, setVolume] = useState(1);
 
+  const audioRef = useRef(null);
   const audioContextRef = useRef(null);
   const socketRef = useRef(null);
   const queueRef = useRef([]); // Queue of decoded AudioBuffers
@@ -18,9 +19,6 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
   const startTimeRef = useRef(null);
   const offsetTimeRef = useRef(0);
   const gainNodeRef = useRef(null);
-
-  const audioRef = useRef(null);
-  const [volume, setVolume] = useState(1);
 
   const togglePlayback = () => {
     if (!audioContextRef.current) {
@@ -150,7 +148,7 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
       <audio ref={audioRef} src={audioSrc} autoPlay loop />
 
       <div className={styles.controls}>
-        <button onClick={togglePlayback} className={styles.button}>
+        <button onClick={() => setIsPlaying(!isPlaying)} className={styles.button}>
           <Image
             src={isPlaying ? "/stream-pause.svg" : "/stream-play.svg"}
             alt={isPlaying ? "Pause" : "Play"}
@@ -188,10 +186,6 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
           />
         </button>
       </div>
-      <p>
-        {Math.floor(position.elapsed / 60)}:{String(Math.floor(position.elapsed % 60)).padStart(2, '0')} / 
-        {Math.floor(position.duration / 60)}:{String(Math.floor(position.duration % 60)).padStart(2, '0')}
-      </p>
     </div>
   );
 }
