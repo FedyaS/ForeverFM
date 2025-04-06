@@ -4,3 +4,4 @@ flask_cors
 dotenv
 soundfile
 flask_socketio
+gunicorn
