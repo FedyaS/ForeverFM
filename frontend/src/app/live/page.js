@@ -8,7 +8,6 @@ import Avatars from "../../components/Avatar";
 import AudioStreamPlayer from "../../components/AudioStreamPlayer";
 
 export default function Stream() {
-  const [isPlaying] = useState(true);
 
   return (
     <div className={styles.page} style={{ width: "100%", maxWidth: "1200px", margin: "0 auto" }}>

@@ -8,6 +8,7 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
   const [transcript, setTranscript] = useState("");
   const [position, setPosition] = useState({ elapsed: 0, duration: 0 });
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   const audioContextRef = useRef(null);
@@ -31,16 +32,36 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
     }
   
     // Toggle mute instead of stopping the audio
-    if (isPlaying) {
+    if (isPlaying && !isMuted) {
       gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime); // mute
       setIsPlaying(false);
-    } else {
+    } else if (!isMuted) {
       gainNodeRef.current.gain.setValueAtTime(1, audioContextRef.current.currentTime); // unmute
       setIsPlaying(true);
       offsetTimeRef.current = position.elapsed;
       playNextInQueue();
+    } else if (isPlaying && isMuted) {
+      gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime); // unmute
+      setIsPlaying(false);
+      setIsMuted(false);
+      offsetTimeRef.current = position.elapsed;
+      playNextInQueue();
     }
-  };  
+  }; 
+  
+  const toggleMuted = () => {
+    if (!isMuted && isPlaying) {
+      setVolume(0);
+      gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime); // mute
+      setIsMuted(true);
+    } else if (isPlaying) {
+      setVolume(1);
+      gainNodeRef.current.gain.setValueAtTime(1, audioContextRef.current.currentTime); // unmute
+      setIsMuted(false);
+      offsetTimeRef.current = position.elapsed;
+      playNextInQueue();
+    }
+  }
 
   const playNextInQueue = () => {
     if (queueRef.current.length === 0) return;
@@ -143,16 +164,24 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
           type="range"
           min={0}
           max={1}
-          step={0.01}
+          step={0.1}
           value={volume}
-          onChange={(e) => setVolume(parseFloat(e.target.value))}
+          onChange={(e) => {
+            setVolume(parseFloat(e.target.value))
+            if (volume >= 0.2) setIsMuted(false)
+            if (volume < 0.2) {
+              setIsMuted(true)
+              gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+            } else if (isPlaying) {
+              gainNodeRef.current.gain.setValueAtTime(volume, audioContextRef.current.currentTime);
+          }}}
           className={styles.slider}
         />
 
-        <button onClick={() => setVolume(volume > 0 ? 0 : 1)} className={styles.button}>
+        <button onClick={toggleMuted} className={styles.button}>
           <Image
-            src={volume > 0 ? "/volume-high.svg" : "/volume-slash.svg"}
-            alt={volume > 0 ? "Volume on" : "Muted"}
+            src={!isMuted ? "/volume-high.svg" : "/volume-slash.svg"}
+            alt={!isMuted ? "Volume on" : "Muted"}
             width={18}
             height={18}
             style={{ filter: "invert(1)" }}

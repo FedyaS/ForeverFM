@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import threading
@@ -5,8 +6,6 @@ import time
 import os
 from getWavFileDuration import get_wav_duration
 from flask_socketio import SocketIO, emit
-import groqAudio
-import generateContent
 
 
 # Initialize Flask app and CORS
@@ -15,78 +14,71 @@ CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")  # Allow CORS for Next.js frontend
 
 # Some stupid globals
-MOCK_NUMBER = 0
 MOCKING = True
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MAX_Q_SIZE = 10
 
 # Shared variables
 conv_topic = "Initial Topic"
-scripts = [] # [{speaker_name: '', text: '', is_audio_generated: False}, ...] # Newest last
+scripts = [] # [{speaker_name: '', text: ''}, ...] # Newest last
 user_prompts = [] # [{user_name: '', text: ''}, ...] # Newest last
 audio = [] # [{speaker_name: '', duration: '', text: '', filename: ''}] # Newest last
 current_playback = None  # Global playback state: {'audio': audio_obj, 'start_time': timestamp}
 last_sent_file = None
 
 
-# Locks for thread safety
+# Lock for thread safety
 scripts_lock = threading.Lock()
 audio_lock = threading.Lock()
 conv_topic_lock = threading.Lock()
 user_prompts_lock = threading.Lock()
-current_playback_lock = threading.Lock()
+current_playback_lock = threading.Lock()  # Lock for current_playback
 
 # Thread functions
 def continousMakeTranscript():
-    global MOCK_NUMBER
     while True:
         time.sleep(5)  # sim time taken for processing
-
-        len_scripts = 0
+        # Make a call to
+        # new_script = generateContent()
+        new_script = {'speaker_name': 'Chip', 'text': 'blah blah blah'}
+        # here
+        
+        print(f"Generated script for {new_script['speaker_name']} saying: {new_script['text'][:20]}")
+        
         with scripts_lock:
-            len_scripts = len(scripts)
-        
-        if len_scripts < MAX_Q_SIZE:
-            # Send only the last 4 scripts for context
-            new_script = generateContent.generateContent(scripts[-4:], conv_topic, mock=MOCKING, mock_number=MOCK_NUMBER)
-            new_script['mock_number'] = MOCK_NUMBER
-            new_script['is_audio_generated'] = False
-            
-            if MOCKING:
-                MOCK_NUMBER += 1
-                if MOCK_NUMBER > 7:
-                    MOCK_NUMBER = 0
-            
-            # new_script = {'speaker_name': 'Chip', 'text': 'blah blah blah', is_audio_generated: False}
+            scripts.append(new_script)
+            if len(scripts) >= 10:
+                scripts.pop(0)
 
-            print(f"Generated script for {new_script['speaker_name']} saying: {new_script['text'][:20]}")
-
-            with scripts_lock:
-                scripts.append(new_script)
-                if len(scripts) >= MAX_Q_SIZE and scripts[0]['is_audio_generated']:
-                    scripts.pop(0)
+        # Just to test:
+        with user_prompts_lock:
+            print(user_prompts)
         
+mock_audio_count = 0
 def continousMakeAudio():
+    global mock_audio_count
     while True:
         time.sleep(5)  # sim time taken for processing
         
         script = None
-        script_index = None
-
         with scripts_lock:
-            for i, s in enumerate(scripts):
-                if not s['is_audio_generated']:
-                    script = s
-                    script_index = i
-                    break
+            if len(scripts) >= 1:
+                script = scripts[0]
         
-        # script = {'speaker_name': 'Aaliyah', 'text': 'blah blah'} # Mock
+        script = {'speaker_name': 'Aaliyah', 'text': 'blah blah'} # Mock
         if script:
-            # Generate our audio
-            new_file_name = f'{round(time.time() * 10)}_audio.wav'
-            groqAudio.createAudio(script['text'], f'{script['speaker_name']}-PlayAI', f'audio/{new_file_name}', MOCKING, script['mock_number'])
             
-            duration = get_wav_duration(new_file_name)
+            # new_file_name = 'speech.wav' # For now
+            new_file_name = f'mock_audio{mock_audio_count}.wav'
+            mock_audio_count += 1
+            if mock_audio_count > 7:
+                mock_audio_count = 0
+            #new_file_name = f"{script['speaker_name']}-{round(time.time() * 1000)}"
+            
+
+            # Make a call to
+            # generateAudio(new_file_name)
+            
+            duration = get_wav_duration(new_file_name, MOCKING)
             new_audio_object = {
                 'speaker_name': script['speaker_name'],
                 'duration': duration,
@@ -94,24 +86,13 @@ def continousMakeAudio():
                 'filename': new_file_name
             }
 
+            print(new_audio_object)
+            print(audio)
             with audio_lock:
                 audio.append(new_audio_object)
-                if len(audio) > MAX_Q_SIZE:
-                    pa = audio.pop(0) # For now
-                    
-                    # If MOCKING is enabled, delete the corresponding file
-                    if MOCKING:
-                        file_to_delete = os.path.join("audio", pa['filename'])  # Construct the file path
-                        if os.path.exists(file_to_delete):
-                            os.remove(file_to_delete)  # Delete the file
-                            print(f"Deleted mock audio file: {file_to_delete}")
+                if len(audio) > 10:
+                    audio.pop(0) # For now
             
-            with scripts_lock:
-                scripts[script_index]['is_audio_generated'] = True
-                if len(scripts) >= MAX_Q_SIZE:
-                    scripts.pop(0)
-                print(f"Scripts is {len(scripts)} elements")
-
             print(f"Generated audio for {script['speaker_name']} duration: {round(duration, 2)} sec saved to: {new_file_name}")
         
 
@@ -197,7 +178,6 @@ thread2 = threading.Thread(target=continousMakeAudio, daemon=True)
 thread3 = threading.Thread(target=continousManageTopic, daemon=True)
 thread4 = threading.Thread(target=playbackManager, daemon=True)
 
-print("Starting background threads...")
 thread1.start()
 thread2.start()
 thread3.start()
@@ -324,4 +304,4 @@ def get_audio():
         return jsonify({"message": "Audio file not found"}), 404
 
 if __name__ == '__main__':
-    socketio.run(app, host="0.0.0.0", port=5001, debug=True, use_reloader=False)
+    socketio.run(app, host="0.0.0.0", port=5001, debug=True, use_reloader=True)
