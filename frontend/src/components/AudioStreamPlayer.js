@@ -2,116 +2,11 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import styles from "./AudioStreamPlayer.module.css";
-import io from "socket.io-client";
 
 export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/audio" }) {
-  const [transcript, setTranscript] = useState("");
-  const [position, setPosition] = useState({ elapsed: 0, duration: 0 });
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isReady, setIsReady] = useState(false);
-
-  const audioContextRef = useRef(null);
-  const socketRef = useRef(null);
-  const queueRef = useRef([]); // Queue of decoded AudioBuffers
-  const currentSourceRef = useRef(null);
-  const startTimeRef = useRef(null);
-  const offsetTimeRef = useRef(0);
-  const gainNodeRef = useRef(null);
-
   const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [volume, setVolume] = useState(1);
-
-  const togglePlayback = () => {
-    if (!audioContextRef.current) {
-      // Create audio context on first interaction
-      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
-      gainNodeRef.current = audioContextRef.current.createGain();
-      gainNodeRef.current.connect(audioContextRef.current.destination);
-      setIsReady(true);
-    }
-  
-    // Toggle mute instead of stopping the audio
-    if (isPlaying) {
-      gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime); // mute
-      setIsPlaying(false);
-    } else {
-      gainNodeRef.current.gain.setValueAtTime(1, audioContextRef.current.currentTime); // unmute
-      setIsPlaying(true);
-      offsetTimeRef.current = position.elapsed;
-      playNextInQueue();
-    }
-  };  
-
-  const playNextInQueue = () => {
-    if (queueRef.current.length === 0) return;
-  
-    const buffer = queueRef.current.shift();
-    const source = audioContextRef.current.createBufferSource();
-    source.buffer = buffer;
-    source.connect(gainNodeRef.current); // route through gain node
-  
-    source.onended = () => {
-      playNextInQueue(); // Always continue playback
-    };
-  
-    source.start(0);
-    currentSourceRef.current = source;
-    startTimeRef.current = audioContextRef.current.currentTime;
-  };
-  
-
-  useEffect(() => {
-    // Connect to the WebSocket server
-    socketRef.current = io("http://localhost:5001"); // Use http:// for Socket.IO
-
-    socketRef.current.on("connect", () => {
-      console.log("Connected to WebSocket");
-    });
-
-    socketRef.current.on("new_file", (data) => {
-      console.log("New audio file:", data.file);
-    });
-
-    socketRef.current.on("audio", (data) => {
-      // Only decode and queue audio if we have an audio context
-      if (audioContextRef.current) {
-        const audioBinaryData = new Uint8Array(data.data);
-        audioContextRef.current.decodeAudioData(audioBinaryData.buffer)
-          .then((decodedBuffer) => {
-            queueRef.current.push(decodedBuffer);
-            if (isPlaying) {
-              playNextInQueue(); // Try playing if currently playing
-            }
-          })
-          .catch((err) => console.error("Audio decode error:", err));
-      }
-    });
-
-    socketRef.current.on("transcript", (data) => {
-      setTranscript(data.data);
-    });
-
-    socketRef.current.on("position", (data) => {
-      setPosition({ elapsed: data.elapsed_time, duration: data.duration });
-    });
-
-    return () => {
-      socketRef.current.disconnect();
-      if (currentSourceRef.current) {
-        //currentSourceRef.current.stop();
-      }
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
-    };
-  }, []);
-
-  // Effect to manage playback state
-  useEffect(() => {
-    if (isReady && isPlaying) {
-      playNextInQueue();
-    }
-  }, [isReady, isPlaying]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -129,7 +24,7 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
       <audio ref={audioRef} src={audioSrc} autoPlay loop />
 
       <div className={styles.controls}>
-        <button onClick={togglePlayback} className={styles.button}>
+        <button onClick={() => setIsPlaying(!isPlaying)} className={styles.button}>
           <Image
             src={isPlaying ? "/stream-pause.svg" : "/stream-play.svg"}
             alt={isPlaying ? "Pause" : "Play"}
@@ -159,10 +54,6 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
           />
         </button>
       </div>
-      <p>
-        {Math.floor(position.elapsed / 60)}:{String(Math.floor(position.elapsed % 60)).padStart(2, '0')} / 
-        {Math.floor(position.duration / 60)}:{String(Math.floor(position.duration % 60)).padStart(2, '0')}
-      </p>
     </div>
   );
 }
