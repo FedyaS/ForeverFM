@@ -139,7 +139,7 @@ def continousManageTopic():
                 user_prompts.pop(0)
         
         if new_up:
-            print(f'Handling new user prompt from {new_up['user_name']} text: {new_up['text']}')
+            print(f"Handling new user prompt from {new_up['user_name']} text: {new_up['text']}")
             new_topic = generateContent.determineNewTopic(new_up['text'], MOCKING)
             
             if new_topic:
