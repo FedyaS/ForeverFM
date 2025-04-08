@@ -5,3 +5,4 @@ dotenv
 soundfile
 flask_socketio
 requests
+gunicorn

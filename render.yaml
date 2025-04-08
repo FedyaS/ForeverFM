@@ -3,7 +3,8 @@ services:
     type: web
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    # startCommand: python app.py
+    startCommand: gunicorn -w 4 -k geventwebsocket.gunicorn.workers.GeventWebSocketWorker app:app
     rootDir: backend
     plan: free
     envVars:
