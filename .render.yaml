@@ -1,0 +1,24 @@
+services:
+  - name: flask-backend
+    type: web
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    rootDir: backend
+    plan: free
+    envVars:
+      - key: PORT
+        value: 10000  # Optional, Flask will use Render's injected PORT anyway
+      - key: FLASK_ENV
+        value: production
+
+  - name: nextjs-frontend
+    type: web
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    rootDir: frontend
+    plan: free
+    envVars:
+      - key: BACKEND_URL
+        value: https://flask-backend.onrender.com
