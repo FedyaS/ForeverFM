@@ -74,7 +74,7 @@ export default function AudioPlayer() {
         audioContextRef.current.close();
       }
     };
-  }, []);
+  }, [playNextInQueue]);
 
   return (
     <div style={{ padding: "20px" }}>

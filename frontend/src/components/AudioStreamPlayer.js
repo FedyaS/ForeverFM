@@ -156,14 +156,14 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
         audioContextRef.current.close();
       }
     };
-  }, []);
+  }, [isPlaying, playNextInQueue]);
 
   // Effect to manage playback state
   useEffect(() => {
     if (isReady && isPlaying) {
       playNextInQueue();
     }
-  }, [isReady, isPlaying]);
+  }, [isReady, isPlaying, playNextInQueue]);
 
   // useEffect(() => {
   //   if (audioRef.current) {
