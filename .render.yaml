@@ -21,4 +21,4 @@ services:
     plan: free
     envVars:
       - key: BACKEND_URL
-        value: https://flask-backend.onrender.com
+        value: https://foreverfm.onrender.com
