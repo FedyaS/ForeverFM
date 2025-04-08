@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import random
 
+WORD_LIMIT = 150
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
@@ -14,7 +15,34 @@ def format_script_history(scripts):
         formatted += f"{turn['speaker_name']}: {turn['text']}\n"
     return formatted.strip()
 
-def generateContent(scripts, conv_topic, mock=True, mock_number=0):
+def makeFirstScriptOnTopic(speaker, not_speaker, conv_topic):
+    prompt = f"""
+You are {speaker}, an AI host on a live podcast called *ForeverFM* — a 24/7 AI-driven show where two bots dive into topics like tech, finance, health, gaming, and more.
+
+The conversation goes on 24/7 but is now shifting to **{conv_topic}**. You may mention how the podcast is still live because it's always live... that's the point. Maybe even make a joke or smart remark about it.
+Do not say welcome back or anything like that because there are no breaks.
+
+Kick off the discussion in a natural, engaging, and conversational tone. Set the stage for your co-host {not_speaker} and the audience. Feel free to reference {not_speaker}, but remember they haven’t spoken yet.
+
+Keep it concise (under {WORD_LIMIT} words) and generate only your own dialogue — just {speaker}'s script.
+"""
+    return prompt
+
+def makeContinuationScriptOnTopic(speaker, not_speaker, conv_topic, history):
+    prompt = f"""
+Your name is {speaker}, and you're part of a live podcast discussing **{conv_topic}**.
+
+Here's what has been said so far:
+{history}
+
+Now it's your turn to speak. Respond to your co-host {not_speaker}, continuing the conversation naturally. Be insightful, creative, and conversational. 
+Avoid repeating what was already said. Make a smooth transition, and keep the flow dynamic.
+
+Limit your response to {WORD_LIMIT} words. Only generate the script for {speaker}.
+"""
+    return prompt
+
+def generateContent(scripts, conv_topic, mock=True, mock_number=0, speaker=None):
     if mock:
         mock_file_path = f"mock_data/scripts/mock_script{mock_number}.json"
         try:
@@ -27,21 +55,21 @@ def generateContent(scripts, conv_topic, mock=True, mock_number=0):
                 "text": "Mock script could not be loaded."
             }
     
-    history = format_script_history(scripts)
-    prompt = f"""
-You are helping write an ongoing podcast about **{conv_topic}**.
+    if speaker is None:
+        if scripts: # try to get last speaker to determine current speaker
+            last_speaker = scripts[-1]['speaker_name']
+            speaker = 'Chip' if last_speaker == 'Aaliyah' else 'Aaliyah'
+        else: # resort to random
+            speaker = random.choice(['Chip', 'Aaliyah'])
+    
+    not_speaker = 'Chip' if speaker == 'Aaliyah' else 'Aaliyah'
 
-Here is the previous script so far:
-{history}
+    if not scripts:
+        prompt = makeFirstScriptOnTopic(speaker, not_speaker, conv_topic)
 
-Continue the podcast with the next speaker's turn. Keep the tone natural, insightful, and conversational. Be creative, stay on topic,
-and make the transition smooth. Limit the response to 150 words. Use only one speaker for this turn.
-
-Speaker Name is either Aaliyah or Chip.
-The return format must be SPEAKER_NAME: TEXT
-For example: Aaliyah: This is the text I will say...
-Only generate the script for one person speaking
-"""
+    else:
+        history = format_script_history(scripts)
+        prompt = makeContinuationScriptOnTopic(speaker, not_speaker, conv_topic, history)
 
     response = requests.post(
         GROQ_API_URL,
@@ -58,12 +86,9 @@ Only generate the script for one person speaking
         #print("Groq Response JSON:", json_data)  # Debug print
 
         message = json_data['choices'][0]['message']['content']
-        lines = message.strip().split("\n", 1)
-        if len(lines) == 2 and ":" in lines[0]:
-            speaker, text = lines[0].split(":", 1)
-            return {"speaker_name": speaker.strip(), "text": text.strip()}
-        else:
-            return {"speaker_name": "AI Narrator", "text": message.strip()}
+        
+        return {"speaker_name": speaker, "text": message.strip().replace('"', '')}
+        
     except Exception as e:
         print("Error parsing Groq response:", e)
         print("Raw response text:", response.text)
