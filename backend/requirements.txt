@@ -6,3 +6,4 @@ soundfile
 flask_socketio
 requests
 gunicorn
+gevent-websocket
