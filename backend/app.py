@@ -17,9 +17,10 @@ socketio = SocketIO(app, cors_allowed_origins="*")  # Allow CORS for Next.js fro
 
 # Some stupid globals
 MOCK_NUMBER = 0
-MOCKING = False
+MOCK_MAX = 7
+MOCKING = True
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MAX_Q_SIZE = 2
+#MAX_Q_SIZE = 7
 should_be_generating_new_data = True
 
 # Shared variables
@@ -37,6 +38,23 @@ audio_lock = threading.Lock()
 conv_topic_lock = threading.Lock()
 user_prompts_lock = threading.Lock()
 current_playback_lock = threading.Lock()
+
+# Load Initial Audios and Scripts
+def loadVariables(file_paths:list = [""],mock_max:int = 7) -> int:
+    '''Loads a list of file_paths into audio[] and scripts[]. This function enables our program to run 24/7
+    without costing us anything extra.
+    `file_path`: List of file_paths for audios and scripts. Requires both to be named the same thing.
+    `mock_max`: The number of mock audios and scripts to pull for each file_path. In other words the MAX MOCK NUMBER.
+    
+    @return: # of things actually appended'''
+    c=0
+    for fp in file_paths:
+        for i in range(mock_max):
+            audio.append(f"mock_data/audio/{fp}{i}.wav")
+            scripts.append(f"mock_data/scripts/{fp}{i}.json")
+        c+=mock_max
+    return c
+
 
 # Thread functions
 def continousMakeTranscript():
@@ -93,6 +111,7 @@ def continousMakeAudio():
             if speaker_name not in ['Aaliyah', 'Chip']:
                 speaker_name = random.choice(['Aaliyah', 'Chip'])
             
+            # Creates audio
             groqAudio.createAudio(script['text'], f'{speaker_name}-PlayAI', f'audio/{new_file_name}', MOCKING, script['mock_number'])
             
             duration = get_wav_duration(new_file_name)
@@ -253,6 +272,8 @@ def playbackManager():
         else:
             time.sleep(1)  # Default sleep when no playback
 
+loadVariables(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
+
 # Start bg threads
 thread1 = threading.Thread(target=continousMakeTranscript, daemon=True)
 thread2 = threading.Thread(target=continousMakeAudio, daemon=True)
@@ -305,7 +326,7 @@ def chat_prompt():
     
     if user_input:
         with user_prompts_lock:
-            user_prompts.append({"user_name": "Some UserName", "text": user_input})
+            user_prompts.append({"user_name": "User 573", "text": user_input})
 
     return jsonify({"message": "Prompt added to queue"}), 200
 
