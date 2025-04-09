@@ -8,6 +8,7 @@ from flask_socketio import SocketIO, emit
 import groqAudio
 import generateContent
 import random
+import json
 
 
 # Initialize Flask app and CORS
@@ -17,14 +18,14 @@ socketio = SocketIO(app, cors_allowed_origins="*")  # Allow CORS for Next.js fro
 
 # Some stupid globals
 MOCK_NUMBER = 0
-MOCK_MAX = 7
-MOCKING = True
+MOCK_MAX = 8
+INFLUENCE_DEGREE = 3 # Number of audios generated per Influence comment. An additional one happens before this, which is the transition.
+MOCKING = False
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-#MAX_Q_SIZE = 7
-should_be_generating_new_data = True
+MAX_Q_SIZE = 8
 
 # Shared variables
-conv_topic = "Startups and Startup Lifestyle"
+conv_topic = "Acoustic Treatment In Recording Space0" # file_name .replace("-"," ")
 scripts = [] # [{speaker_name: '', text: '', is_audio_generated: False}, ...] # Newest last
 user_prompts = [] # [{user_name: '', text: ''}, ...] # Newest last
 audio = [] # [{speaker_name: '', duration: '', text: '', filename: ''}] # Newest last
@@ -40,7 +41,7 @@ user_prompts_lock = threading.Lock()
 current_playback_lock = threading.Lock()
 
 # Load Initial Audios and Scripts
-def loadVariables(file_paths:list = [""],mock_max:int = 7) -> int:
+def loadAnotherTopic(file_paths:list = [""],mock_max:int = 7) -> int:
     '''Loads a list of file_paths into audio[] and scripts[]. This function enables our program to run 24/7
     without costing us anything extra.
     `file_path`: List of file_paths for audios and scripts. Requires both to be named the same thing.
@@ -50,40 +51,80 @@ def loadVariables(file_paths:list = [""],mock_max:int = 7) -> int:
     c=0
     for fp in file_paths:
         for i in range(mock_max):
-            audio.append(f"mock_data/audio/{fp}{i}.wav")
-            scripts.append(f"mock_data/scripts/{fp}{i}.json")
-        c+=mock_max
+            new_script:dict = None
+            with open(os.path.join(BASE_DIR, "mock_data", "scripts", f"{fp}{i}.json"),"r") as f:
+                new_script = json.load(f)
+                new_script['mock_number'] = MOCK_NUMBER
+                new_script['is_audio_generated'] = True
+
+                with scripts_lock:
+                    scripts.append(new_script)
+
+                audio_fn = os.path.join(BASE_DIR, "mock_data", "audio", f"{fp}{i}.wav")
+                duration = get_wav_duration(audio_fn)
+                new_audio = {
+                    'speaker_name': new_script['speaker_name'],
+                    'duration': duration,
+                    'text': new_script['text'],
+                    'filename': audio_fn
+                }
+
+                with audio_lock:
+                    audio.append(new_audio)
+
+                c+=1
     return c
 
 
 # Thread functions
 def continousMakeTranscript():
-    """Continously generates content (scripts) to be spoken"""
+    """Continously generates content (scripts) to be spoken.
+    Update: This should only work for chat-prompted stuff now!"""
+    #global MOCK_NUMBER
     global MOCK_NUMBER
+    should_be_generating_new_data = False
+    with conv_topic_lock:
+        cur_topic = conv_topic
     while True:
         len_scripts = 0
         with scripts_lock:
             len_scripts = len(scripts)
+        with conv_topic_lock:
+            if conv_topic != cur_topic:
+                should_be_generating_new_data = True
+            else:
+                should_be_generating_new_data = False
+            cur_topic = conv_topic
         
-        if len_scripts < MAX_Q_SIZE and should_be_generating_new_data:
-            # Send only the last 4 scripts for context
-            new_script = generateContent.generateContent(scripts[-4:], conv_topic, mock=MOCKING, mock_number=MOCK_NUMBER)
-            new_script['mock_number'] = MOCK_NUMBER
-            new_script['is_audio_generated'] = False
+        if should_be_generating_new_data:
+            # Send only the (next) 4 scripts for context (before clearing them)
+            new_scripts = list()
+            for i in range(INFLUENCE_DEGREE):
+                new_script = generateContent.generateContent(scripts[:4], conv_topic, mock=MOCKING, mock_number=MOCK_NUMBER)
+                new_script['mock_number'] = MOCK_NUMBER
+                new_script['is_audio_generated'] = False
+                with scripts_lock:
+                    scripts.append(new_script)
+                    #if len(scripts) >= MAX_Q_SIZE and scripts[0]['is_audio_generated']:
+                    #    scripts.pop(0)
             
             if MOCKING:
                 MOCK_NUMBER += 1
-                if MOCK_NUMBER > 7:
+                if MOCK_NUMBER > MOCK_MAX:
                     MOCK_NUMBER = 0
-            
+
+            loadAnotherTopic(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
+
             # new_script = {'speaker_name': 'Chip', 'text': 'blah blah blah', 'mock_number': 1, 'is_audio_generated': False}
 
             print(f"Generated script for {new_script['speaker_name']} saying: {new_script['text'][:20]}")
 
-            with scripts_lock:
+            '''with scripts_lock:
                 scripts.append(new_script)
                 if len(scripts) >= MAX_Q_SIZE and scripts[0]['is_audio_generated']:
-                    scripts.pop(0)
+                    scripts.pop(0)'''
+        elif len(audio) < INFLUENCE_DEGREE: # this can be any number really, its when the topic is placed on the back of queue again
+            loadAnotherTopic(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
 
         time.sleep(5)  # not sure if we really need this, but it was working with it so keeping it here
         
@@ -95,6 +136,7 @@ def continousMakeAudio():
 
         with scripts_lock:
             for i, s in enumerate(scripts):
+                #print("===s===\n",scripts,enumerate(scripts),"\n===s===")
                 if not s['is_audio_generated']: # Grab the first script that doesn't have audio generated
                     script = s
                     script_index = i
@@ -102,9 +144,10 @@ def continousMakeAudio():
         
         # script = {'speaker_name': 'Aaliyah', 'text': 'blah blah'} # Mock
         
-        if script and should_be_generating_new_data:
+        if script:
             # Generate our audio
-            new_file_name = f'{round(time.time() * 10)}_audio.wav'
+            with conv_topic_lock:
+                new_file_name = f'{conv_topic.strip().replace(" ","-")}{round(time.time())}.wav'
             speaker_name = script['speaker_name']
             
             # Dirty fix as sometimes generateContent() returns a weird speaker name
@@ -112,7 +155,7 @@ def continousMakeAudio():
                 speaker_name = random.choice(['Aaliyah', 'Chip'])
             
             # Creates audio
-            groqAudio.createAudio(script['text'], f'{speaker_name}-PlayAI', f'audio/{new_file_name}', MOCKING, script['mock_number'])
+            groqAudio.createAudio(script['text'], f'{speaker_name}', f'audio/{new_file_name}', MOCKING, script['mock_number'])
             
             duration = get_wav_duration(new_file_name)
             new_audio_object = {
@@ -149,7 +192,7 @@ def continousManageTopic():
     """Continously check for new user topics, if a new user topic is found handle the transition"""
     # Note this function will quickly jump from topic to topic if there are many user prompts, will need to implement logic to limit topic jumps
     
-    global should_be_generating_new_data, conv_topic, scripts, audio
+    global conv_topic, scripts, audio
     while True:
         new_up = None
         with user_prompts_lock:
@@ -162,7 +205,7 @@ def continousManageTopic():
             new_topic = generateContent.determineNewTopic(new_up['text'], MOCKING)
             
             if new_topic:
-                should_be_generating_new_data = False # Pauses script / audio generation while the topic is being switched
+                #should_be_generating_new_data = False # Pauses script / audio generation while the topic is being switched
                 
                 latest_spoken_scripts = []
                 with scripts_lock:
@@ -214,7 +257,7 @@ def broadcastPlaybackState(playback, elapsed):
             with open(audio_path, "rb") as f:
                 audio_data = f.read()
                 socketio.emit("audio", {"data": audio_data, "file": filename})
-                print(f'Broadcasted audio {filename} to all clients')
+                print(f'Broadcasted audio {filename.split("backend/")[1].strip()} to all clients')
             
             last_sent_file = filename
             socketio.emit("transcript", {"data": audio_obj['text']})
@@ -226,7 +269,7 @@ def broadcastPlaybackState(playback, elapsed):
             "duration": audio_obj['duration'],
             "timestamp": int(time.time() * 1000)
         })
-        print(f'Broadcasted position {elapsed} of {filename} to all clients')
+        #print(f'Broadcasted position {elapsed} of {filename.split("backend/")[1].strip()} to all clients')
 
 
 def playbackManager():
@@ -255,7 +298,8 @@ def playbackManager():
                 with audio_lock:
                     if audio:
                         current_playback = {'audio': audio[0], 'start_time': time.time()}
-                        print(f"Starting playback: {current_playback['audio']['filename']}")
+                        #print(current_playback['audio'])
+                        print(f"Starting playback: {current_playback['audio']['filename'].split("backend/")[1]}")
             
             # Use this to exit the current_playback_lock so it doesn't have to keep waiting
             playback_snapshot = current_playback
@@ -272,7 +316,7 @@ def playbackManager():
         else:
             time.sleep(1)  # Default sleep when no playback
 
-loadVariables(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
+loadAnotherTopic(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
 
 # Start bg threads
 thread1 = threading.Thread(target=continousMakeTranscript, daemon=True)
@@ -285,13 +329,13 @@ thread1.start()
 thread2.start()
 thread3.start()
 thread4.start()
+print("Background threads running!")
 
 # Whenever a new client connects to the websocket this runs
 @socketio.on("connect")
 def handle_connect():
-    """Sends current playback state to a newly connected client."""
     print("Client connected:", request.sid)
-    
+
     cp = None
     with current_playback_lock:
         cp = current_playback
@@ -299,17 +343,26 @@ def handle_connect():
     if cp:
         audio_obj = cp['audio']
         elapsed = time.time() - cp['start_time']
-        filename = audio_obj['filename']
-        audio_path = os.path.join("./audio", filename)
-        
-        # Send audio file to the new client only
-        if os.path.exists(audio_path):
-            with open(audio_path, "rb") as f:
-                audio_data = f.read()
-                socketio.emit("audio", {"data": audio_data, "file": filename}, to=request.sid)
-                print(f'Emitted audio to new client {request.sid} with filename: {filename}')
-        
-        # Send transcript and position to the new client
+    else:
+        with audio_lock:
+            if audio:
+                # If no current playback, but audio queue is not empty, send the first audio
+                audio_obj = audio[0]
+                elapsed = 0
+            else:
+                # No audio to send at all
+                print("No current playback or audio queued.")
+                return
+
+    filename = audio_obj['filename']
+    audio_path = os.path.join("./audio", filename)
+
+    if os.path.exists(audio_path):
+        with open(audio_path, "rb") as f:
+            audio_data = f.read()
+            socketio.emit("audio", {"data": audio_data, "file": filename}, to=request.sid)
+            print(f'Emitted audio to new client {request.sid} with filename: {filename}')
+
         socketio.emit("transcript", {"data": audio_obj['text']}, to=request.sid)
         socketio.emit("position", {
             "file": filename,
@@ -345,6 +398,10 @@ def get_audio():
     else:
         return jsonify({"message": "Audio file not found"}), 404
 # Careful ^^ deprecated
+
+@app.route('/health')
+def health():
+    return "OK", 200
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port=5001, debug=True, use_reloader=False)

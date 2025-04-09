@@ -22,7 +22,7 @@ You are {speaker}, an AI host on a live podcast called *ForeverFM* — a 24/7 AI
 The conversation goes on 24/7 but is now shifting to **{conv_topic}**. You may mention how the podcast is still live because it's always live... that's the point. Maybe even make a joke or smart remark about it.
 Do not say welcome back or anything like that because there are no breaks.
 
-Kick off the discussion in a natural, engaging, and conversational tone. Set the stage for your co-host {not_speaker} and the audience. Feel free to reference {not_speaker}, but remember they haven’t spoken yet.
+Kick off the discussion in a natural, engaging, and conversational tone. Set the stage for your co-host {not_speaker} and the audience. Feel free to reference {not_speaker}, but remember they haven't spoken yet.
 
 Keep it concise (under {WORD_LIMIT} words) and generate only your own dialogue — just {speaker}'s script.
 """
@@ -42,7 +42,7 @@ Limit your response to {WORD_LIMIT} words. Only generate the script for {speaker
 """
     return prompt
 
-def generateContent(scripts, conv_topic, mock=True, mock_number=0, speaker=None):
+def generateContent(scripts, conv_topic, mock=True, mock_number=0, speaker=None, mock_fp=None):
     if mock:
         mock_file_path = f"mock_data/scripts/mock_script{mock_number}.json"
         try:
@@ -87,7 +87,7 @@ def generateContent(scripts, conv_topic, mock=True, mock_number=0, speaker=None)
 
         message = json_data['choices'][0]['message']['content']
         
-        return {"speaker_name": speaker, "text": message.strip().replace('"', '')}
+        return {"speaker_name": speaker.strip(), "text": message.strip().replace('"', '')}
         
     except Exception as e:
         print("Error parsing Groq response:", e)
