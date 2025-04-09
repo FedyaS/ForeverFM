@@ -9,7 +9,8 @@ import groqAudio
 import generateContent
 import random
 import json
-
+from pydub import AudioSegment
+import io
 
 # Initialize Flask app and CORS
 app = Flask(__name__)
@@ -123,8 +124,6 @@ def continousMakeTranscript():
                 scripts.append(new_script)
                 if len(scripts) >= MAX_Q_SIZE and scripts[0]['is_audio_generated']:
                     scripts.pop(0)'''
-        elif len(audio) < INFLUENCE_DEGREE: # this can be any number really, its when the topic is placed on the back of queue again
-            loadAnotherTopic(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
 
         time.sleep(5)  # not sure if we really need this, but it was working with it so keeping it here
         
@@ -157,12 +156,12 @@ def continousMakeAudio():
             # Creates audio
             groqAudio.createAudio(script['text'], f'{speaker_name}', f'audio/{new_file_name}', MOCKING, script['mock_number'])
             
-            duration = get_wav_duration(new_file_name)
+            duration = get_wav_duration(f'audio/{new_file_name}')
             new_audio_object = {
                 'speaker_name': script['speaker_name'],
                 'duration': duration,
                 'text': script['text'],
-                'filename': new_file_name
+                'filename': f'audio/{new_file_name}'
             }
 
             with audio_lock:
@@ -184,6 +183,10 @@ def continousMakeAudio():
                 print(f"Scripts is {len(scripts)} elements")
 
             print(f"Generated audio for {script['speaker_name']} duration: {round(duration, 2)} sec saved to: {new_file_name}")
+        elif len(audio) < INFLUENCE_DEGREE: # this can be any number really, its when the topic is placed on the back of queue again
+            print("Audio queue is small, adding random topic... len(audio) =",len(audio))
+            loadAnotherTopic(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
+            print("Audio queue restocked! len(audio) =",len(audio))
 
         time.sleep(5)  # not sure if we really need this, but it was working with it so keeping it here
         
@@ -358,19 +361,31 @@ def handle_connect():
     audio_path = os.path.join("./audio", filename)
 
     if os.path.exists(audio_path):
-        with open(audio_path, "rb") as f:
-            audio_data = f.read()
-            socketio.emit("audio", {"data": audio_data, "file": filename}, to=request.sid)
-            print(f'Emitted audio to new client {request.sid} with filename: {filename}')
+        # Load and trim the audio using pydub
+        try:
+            audio_seg = AudioSegment.from_file(audio_path)
+            trimmed_audio = audio_seg[int(elapsed * 1000):]  # cut off beginning
 
-        socketio.emit("transcript", {"data": audio_obj['text']}, to=request.sid)
-        socketio.emit("position", {
-            "file": filename,
-            "elapsed_time": elapsed,
-            "duration": audio_obj['duration'],
-            "timestamp": int(time.time() * 1000)
-        }, to=request.sid)
-        print(f'Emitted transcripts and position to new client {request.sid}')
+            # Convert trimmed audio to bytes
+            buffer = io.BytesIO()
+            trimmed_audio.export(buffer, format="wav")
+            buffer.seek(0)
+            audio_data = buffer.read()
+
+            socketio.emit("audio", {"data": audio_data, "file": filename}, to=request.sid)
+            print(f'Emitted trimmed audio to new client {request.sid} with filename: {filename}')
+
+            socketio.emit("transcript", {"data": audio_obj['text']}, to=request.sid)
+            socketio.emit("position", {
+                "file": filename,
+                "elapsed_time": elapsed,
+                "duration": audio_obj['duration'],
+                "timestamp": int(time.time() * 1000)
+            }, to=request.sid)
+            print(f'Emitted transcript and position to new client {request.sid}')
+
+        except Exception as e:
+            print(f"Error processing audio for {request.sid}: {e}")
 
 # Endpoints
 @app.route('/chat-prompt', methods=['POST'])
