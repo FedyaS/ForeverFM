@@ -3,7 +3,7 @@
 
 ## Base URL
 ```
-http://localhost:5001
+https://flask-backend-z6zx.onrender.com
 ```
 
 ### **1. POST `/chat-prompt`**

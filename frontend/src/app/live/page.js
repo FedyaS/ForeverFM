@@ -7,6 +7,8 @@ import styles from "../styles/page.module.css";
 import Avatars from "../../components/Avatar";
 import AudioStreamPlayer from "../../components/AudioStreamPlayer";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 export default function Stream() {
 
   return (
@@ -40,7 +42,7 @@ export default function Stream() {
               className={styles.responsiveImage}
             />
 
-              <AudioStreamPlayer audioSrc="http://localhost:5001/audio" />
+              <AudioStreamPlayer audioSrc={`${apiUrl}/audio`} />
           </div>
 
           <div className={styles.chatWrapper}>

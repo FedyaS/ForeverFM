@@ -40,7 +40,7 @@ export default function ChatBox() {
     setStatusMessage("");
 
     try {
-      const response = await fetch("http://localhost:5001/chat-prompt", {
+      const response = await fetch(`${apiUrl}/chat-prompt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_prompt: userPrompt }),
