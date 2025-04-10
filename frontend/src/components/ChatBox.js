@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import styles from "./ChatBox.module.css";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 export default function ChatBox() {
   const [userPrompt, setUserPrompt] = useState("");
   const [statusMessage, setStatusMessage] = useState("");

@@ -4,6 +4,8 @@ import Image from "next/image";
 import styles from "./AudioStreamPlayer.module.css";
 import io from "socket.io-client";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 export default function AudioStreamPlayer({ audioSrc = `${apiUrl}/audio` }) {
   const [transcript, setTranscript] = useState("");
   const [position, setPosition] = useState({ elapsed: 0, duration: 0 });
