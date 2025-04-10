@@ -6,6 +6,7 @@ import Link from "next/link";
 import styles from "../styles/page.module.css";
 import Avatars from "../../components/Avatar";
 import AudioStreamPlayer from "../../components/AudioStreamPlayer";
+import Description from "../../components/Description";
 
 export default function Stream() {
 
@@ -51,7 +52,10 @@ export default function Stream() {
         </div>
         
         {/* Avatar Widget */}
-        <Avatars />
+        <div style={{ marginTop: "1rem", marginBottom: "1rem", display: "-webkit-flex",  justifyContent: "space-between",}}> {/* TODO: Restructure divs to avoid this*/}
+          <Avatars />
+          <Description />
+        </div>
 
         {/* Navigation */}
         <div className={styles.ctas} style={{ marginTop: "2rem" }}>
