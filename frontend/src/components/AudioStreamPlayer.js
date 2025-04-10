@@ -38,14 +38,16 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
       gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime); // mute
       setIsPlaying(false);
     } else if (!isMuted) {
-      gainNodeRef.current.gain.setValueAtTime(1, audioContextRef.current.currentTime); // unmute
+      gainNodeRef.current.gain.setValueAtTime(volume, audioContextRef.current.currentTime); // unmute
       setIsPlaying(true);
       offsetTimeRef.current = position.elapsed;
       playNextInQueue();
     } else if (isPlaying && isMuted) {
-      gainNodeRef.current.gain.setValueAtTime(0, audioContextRef.current.currentTime); // unmute
+      gainNodeRef.current.gain.setValueAtTime(volume, audioContextRef.current.currentTime); // unmute
       setIsPlaying(false);
-      setIsMuted(false);
+      if (volume > 0.1) setIsMuted(false);
+    } else {
+      setIsPlaying(true);
       offsetTimeRef.current = position.elapsed;
       playNextInQueue();
     }
