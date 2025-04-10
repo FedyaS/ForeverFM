@@ -2,26 +2,30 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import styles from "./ChatBox.module.css";
+import Cookies from "js-cookie";
 
+const MAX_TOKENS = 5;
+const COOKIE_KEY = "usedTokens";
+const COOKIE_TIMESTAMP = "lastTokenReset";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ChatBox() {
   const [userPrompt, setUserPrompt] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tokens, setTokens] = useState(5);
+  const [tokens, setTokens] = useState(null);
   const [messages, setMessages] = useState([
     {
       id: 1,
       username: "Host",
       message: "Welcome to the livestream! Feel free to join the chat.",
-      timestamp: "13:45",
+      timestamp: "01:45 PM",
     },
     {
       id: 2,
       username: "Moderator",
       message: "Remember to keep the chat respectful and on topic.",
-      timestamp: "14:10",
+      timestamp: "02:10 PM",
     },
   ]);
   const chatRef = useRef(null);
@@ -31,7 +35,7 @@ export default function ChatBox() {
     e.preventDefault();
     if (!userPrompt.trim()) return;
     if (tokens <= 0) {
-      setStatusMessage("You're out of energy!");
+      setStatusMessage("Come back tomorrow for more!");
       return;
     }
 
@@ -45,7 +49,19 @@ export default function ChatBox() {
 
     setMessages((prev) => [...prev, newMessage]);
     setUserPrompt("") 
-    setTokens((prev) => prev - 1);
+    setTokens((prev) => {
+      const newTokens = prev - 1;
+      const usedTokens = MAX_TOKENS - newTokens;
+    
+      Cookies.set(COOKIE_KEY, usedTokens.toString(), { expires: 7 });
+    
+      // Save timestamp if not already set
+      if (!Cookies.get(COOKIE_TIMESTAMP)) {
+        Cookies.set(COOKIE_TIMESTAMP, Date.now().toString(), { expires: 7 });
+      }
+    
+      return newTokens;
+    });
     setIsSubmitting(true);
     setStatusMessage("");
 
@@ -73,10 +89,27 @@ export default function ChatBox() {
   };
 
   useEffect(() => {
+    const storedUses = parseInt(Cookies.get(COOKIE_KEY) || "0", 10);
+    const lastReset = Cookies.get(COOKIE_TIMESTAMP);
+    const now = Date.now();
+  
+    if (lastReset && now - parseInt(lastReset, 10) > 24 * 60 * 60 * 1000) {
+      // More than 24h has passed — reset
+      Cookies.set(COOKIE_TIMESTAMP, now.toString());
+      Cookies.set(COOKIE_KEY, "0");
+      setTokens(MAX_TOKENS);
+    } else {
+      const remaining = Math.max(0, MAX_TOKENS - storedUses);
+      setTokens(remaining);
+    }
+  }, []);
+  useEffect(() => {
     if (chatRef.current) {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
   }, [messages]);
+
+  if (tokens == null) return null;
 
   return (
     <div className={styles.wrapper}>
