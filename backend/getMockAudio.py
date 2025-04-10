@@ -3,14 +3,36 @@ import json
 import os
 import time
 
-for i in range(8):
-    with open(f'mock_data/scripts/mock_script{i}.json', 'r') as f:
-        data: dict = json.load(f)
-        # print(script['text'])
-        groqAudio.createAudio(text=data["text"],voice=f"{data["speaker_name"]}-PlayAI",file_path=f"mock_data/audio/mock_audio{i}.wav",mock=False)
-        f.close()
-    # groqAudio.createAudio("",'Chip-PlayAI',f'''mock_data/audio/out{i}.wav''')
-    time.sleep(15)
+def generateAudioFromScripts(conv_topic):
+    topic_slug = conv_topic.replace(' ', '-')
+    
+    script_dir = os.path.join('mock_data', 'scripts', topic_slug)
+    audio_dir = os.path.join('mock_data', 'audio', topic_slug)
+    os.makedirs(audio_dir, exist_ok=True)
+
+    i = 0
+    while True:
+        script_path = os.path.join(script_dir, f"{topic_slug}{i}.json")
+        audio_path = os.path.join(audio_dir, f"{topic_slug}{i}.wav")
+
+        if not os.path.exists(script_path):
+            break  # Stop when the next script is missing
+
+        with open(script_path, 'r') as f:
+            data: dict = json.load(f)
+
+        groqAudio.createAudio(
+            text=data["text"],
+            voice=f"{data['speaker_name']}-PlayAI",
+            file_path=audio_path,
+            mock=False
+        )
+
+        print(f"[Audio saved] {audio_path}")
+        time.sleep(15)
+        i += 1
+
+generateAudioFromScripts('Music-Theory-and-the-Science-Behind-Viral-Pop-Songs')
 
 
 # Get the mock transition script
