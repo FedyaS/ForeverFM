@@ -305,7 +305,7 @@ def playbackManager():
                     if audio:
                         current_playback = {'audio': audio[0], 'start_time': time.time()}
                         #print(current_playback['audio'])
-                        print(f"Starting playback: {current_playback['audio']['filename'].split("backend/")[1]}")
+                        print(f"Starting playback: {current_playback['audio']['filename'].split('backend/')[1]}")
             
             # Use this to exit the current_playback_lock so it doesn't have to keep waiting
             playback_snapshot = current_playback
