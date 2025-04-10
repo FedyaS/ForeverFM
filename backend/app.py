@@ -26,7 +26,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MAX_Q_SIZE = 8
 
 # Shared variables
-conv_topic = "Acoustic Treatment In Recording Space0" # file_name .replace("-"," ")
+conv_topic = "Acoustic Treatment In Recording Space" # file_name .replace("-"," ")
 scripts = [] # [{speaker_name: '', text: '', is_audio_generated: False}, ...] # Newest last
 user_prompts = [] # [{user_name: '', text: ''}, ...] # Newest last
 audio = [] # [{speaker_name: '', duration: '', text: '', filename: ''}] # Newest last
@@ -41,39 +41,63 @@ conv_topic_lock = threading.Lock()
 user_prompts_lock = threading.Lock()
 current_playback_lock = threading.Lock()
 
+def countSequentialWavs(base_name):
+    i = 0
+    while True:
+        file_path = os.path.join(BASE_DIR, f"mock_data/audio/{base_name}", f"{base_name}{i}.wav")
+        if not os.path.exists(file_path):
+            break
+        i += 1
+    return i
+
 # Load Initial Audios and Scripts
-def loadAnotherTopic(file_paths:list = [""],mock_max:int = 7) -> int:
+def loadAnotherTopic() -> int:
     '''Loads a list of file_paths into audio[] and scripts[]. This function enables our program to run 24/7
     without costing us anything extra.
     `file_path`: List of file_paths for audios and scripts. Requires both to be named the same thing.
     `mock_max`: The number of mock audios and scripts to pull for each file_path. In other words the MAX MOCK NUMBER.
     
     @return: # of things actually appended'''
+
+    topics:list = list()
+    with open(f"{BASE_DIR}/mock_data/LoopTopics.txt","r") as f:
+        lines:list = f.readlines()
+        for line in lines:
+            topics.append(line.strip())
+    for topic in topics:
+        if len(audio) > 0 and topic in audio[0]['filename']:
+            print(topic,"has been removed from next queue")
+            topics.remove(topic)
+
+    fp = random.choice(topics)
+    topic_len = countSequentialWavs(fp)
+    audio_fp = "mock_data/audio/"
+    scripts_fp = "mock_data/scripts/"
+
     c=0
-    for fp in file_paths:
-        for i in range(mock_max):
-            new_script:dict = None
-            with open(os.path.join(BASE_DIR, "mock_data", "scripts", f"{fp}{i}.json"),"r") as f:
-                new_script = json.load(f)
-                new_script['mock_number'] = MOCK_NUMBER
-                new_script['is_audio_generated'] = True
+    for i in range(topic_len):
+        new_script:dict = None
+        with open(os.path.join(BASE_DIR, "mock_data", "scripts", fp, f"{fp}{i}.json"),"r") as f:
+            new_script = json.load(f)
+            new_script['mock_number'] = MOCK_NUMBER
+            new_script['is_audio_generated'] = True
 
-                with scripts_lock:
-                    scripts.append(new_script)
+            with scripts_lock:
+                scripts.append(new_script)
 
-                audio_fn = os.path.join(BASE_DIR, "mock_data", "audio", f"{fp}{i}.wav")
-                duration = get_wav_duration(audio_fn)
-                new_audio = {
-                    'speaker_name': new_script['speaker_name'],
-                    'duration': duration,
-                    'text': new_script['text'],
-                    'filename': audio_fn
-                }
+            audio_fn = os.path.join(BASE_DIR, "mock_data", "audio", fp, f"{fp}{i}.wav")
+            duration = get_wav_duration(audio_fn)
+            new_audio = {
+                'speaker_name': new_script['speaker_name'],
+                'duration': duration,
+                'text': new_script['text'],
+                'filename': audio_fn
+            }
 
-                with audio_lock:
-                    audio.append(new_audio)
+            with audio_lock:
+                audio.append(new_audio)
 
-                c+=1
+            c+=1
     return c
 
 
@@ -114,7 +138,7 @@ def continousMakeTranscript():
                 if MOCK_NUMBER > MOCK_MAX:
                     MOCK_NUMBER = 0
 
-            loadAnotherTopic(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
+            loadAnotherTopic()
 
             # new_script = {'speaker_name': 'Chip', 'text': 'blah blah blah', 'mock_number': 1, 'is_audio_generated': False}
 
@@ -188,7 +212,7 @@ def continousMakeAudio():
             print(f"Generated audio for {script['speaker_name']} duration: {round(duration, 2)} sec saved to: {new_file_name}")
         elif len(audio) < INFLUENCE_DEGREE: # this can be any number really, its when the topic is placed on the back of queue again
             print("Audio queue is small, adding random topic... len(audio) =",len(audio))
-            loadAnotherTopic(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
+            loadAnotherTopic()
             print("Audio queue restocked! len(audio) =",len(audio))
 
         time.sleep(5)  # not sure if we really need this, but it was working with it so keeping it here
@@ -322,7 +346,7 @@ def playbackManager():
         else:
             time.sleep(1)  # Default sleep when no playback
 
-loadAnotherTopic(file_paths=["Acoustic-Treatment-In-Recording-Space"],mock_max=MOCK_MAX)
+loadAnotherTopic()
 
 # Start bg threads
 thread1 = threading.Thread(target=continousMakeTranscript, daemon=True)
