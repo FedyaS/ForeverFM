@@ -1,0 +1,81 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+    max-width:20.3rem;
+  }
+  
+  .card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    font-family: Arial, sans-serif;
+    color: #fff;
+    padding: 1rem;
+    background-color: #18181b;
+    border-radius: 12px;
+    max-width: 420px;
+  }
+  
+  .avatarBox {
+    position: relative;
+    width: 56px;
+    height: 56px;
+  }
+  
+  .avatarImage {
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #333;
+  }
+  
+  .liveBadge {
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    background-color: #e91916;
+    color: white;
+    font-weight: bold;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  
+  .info {
+    flex: 1;
+  }
+  
+  .nameLine {
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  
+  .check {
+    color: #9147ff;
+  }
+  
+  .role {
+    font-size: 13px;
+    color: #ccc;
+    margin-top: 4px;
+  }
+  
+  .tags {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  
+  .tag {
+    background-color: #262626;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #ccc;
+  }
+  
