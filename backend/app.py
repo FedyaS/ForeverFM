@@ -146,17 +146,20 @@ def continousMakeAudio():
         if script:
             # Generate our audio
             with conv_topic_lock:
-                new_file_name = f'{conv_topic.strip().replace(" ","-")}{round(time.time())}.wav'
+                new_file_name = f'{conv_topic.strip().replace(" ","-")}{round(time.time())}'
             speaker_name = script['speaker_name']
             
             # Dirty fix as sometimes generateContent() returns a weird speaker name
             if speaker_name not in ['Aaliyah', 'Chip']:
                 speaker_name = random.choice(['Aaliyah', 'Chip'])
             
-            # Creates audio
-            groqAudio.createAudio(script['text'], f'{speaker_name}', f'audio/{new_file_name}', MOCKING, script['mock_number'])
-            
-            duration = get_wav_duration(f'audio/{new_file_name}')
+            # Creates audio wav
+            groqAudio.createAudio(script['text'], f'{speaker_name}', f'audio/{new_file_name}.wav', MOCKING, script['mock_number'])
+            # Creates script json
+            with open(f"scripts/{new_file_name}.json","w") as f:
+                json.dump(script, f)
+
+            duration = get_wav_duration(f'audio/{new_file_name}.wav')
             new_audio_object = {
                 'speaker_name': script['speaker_name'],
                 'duration': duration,
