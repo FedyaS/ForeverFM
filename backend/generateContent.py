@@ -20,9 +20,12 @@ def makeFirstScriptOnTopic(speaker, not_speaker, conv_topic):
 You are {speaker}, an AI host on a live podcast called *ForeverFM* — a 24/7 AI-driven show where two bots dive into topics like tech, finance, health, gaming, and more.
 
 The conversation goes on 24/7 but is now shifting to **{conv_topic}**. You may mention how the podcast is still live because it's always live... that's the point. Maybe even make a joke or smart remark about it.
+You may say to listeners that they are listening to *ForeverFM*.
 Do not say welcome back or anything like that because there are no breaks.
+Be clear that you are now shifting into a discussion about **{conv_topic}**
 
-Kick off the discussion in a natural, engaging, and conversational tone. Set the stage for your co-host {not_speaker} and the audience. Feel free to reference {not_speaker}, but remember they haven't spoken yet.
+Avoid sounding robotic or repetitive.
+Kick off the discussion in a natural, engaging, and conversational tone. Set the stage for your co-host {not_speaker} and the audience. Feel free to reference {not_speaker}, but remember they haven’t spoken yet.
 
 Keep it concise (under {WORD_LIMIT} words) and generate only your own dialogue — just {speaker}'s script.
 """
@@ -36,13 +39,31 @@ Here's what has been said so far:
 {history}
 
 Now it's your turn to speak. Respond to your co-host {not_speaker}, continuing the conversation naturally. Be insightful, creative, and conversational. 
+Avoid sounding robotic or repetitive. You may, but don't have to mention them by name.
 Avoid repeating what was already said. Make a smooth transition, and keep the flow dynamic.
 
 Limit your response to {WORD_LIMIT} words. Only generate the script for {speaker}.
 """
     return prompt
 
-def generateContent(scripts, conv_topic, mock=True, mock_number=0, speaker=None, mock_fp=None):
+def makeLastScriptOnTopic(speaker, not_speaker, conv_topic, history):
+    prompt = f"""
+You are {speaker}, one of two AI hosts on a live podcast currently discussing **{conv_topic}**.
+
+Here's what has been said so far:
+{history}
+
+It's now time to wrap up the conversation on {conv_topic}. Respond to your co-host {not_speaker} naturally — keep the tone conversational, creative, and reflective. 
+Avoid sounding robotic or repetitive. No need to summarize everything, just leave a strong final thought or a clever closing remark.
+
+Guide the conversation toward a new topic, but don’t mention what it is — keep it open-ended and seamless for a topic switch (handled by a separate script).
+
+Limit your response to {WORD_LIMIT} words. Only generate the script for {speaker}.
+"""
+    return prompt
+
+
+def generateContent(scripts, conv_topic, mock=True, mock_number=0, speaker=None, last_script_on_topic=False):
     if mock:
         mock_file_path = f"mock_data/scripts/mock_script{mock_number}.json"
         try:
@@ -64,7 +85,11 @@ def generateContent(scripts, conv_topic, mock=True, mock_number=0, speaker=None,
     
     not_speaker = 'Chip' if speaker == 'Aaliyah' else 'Aaliyah'
 
-    if not scripts:
+    if last_script_on_topic:
+        history = format_script_history(scripts)
+        prompt = makeLastScriptOnTopic(speaker, not_speaker, conv_topic, history)
+
+    elif not scripts:
         prompt = makeFirstScriptOnTopic(speaker, not_speaker, conv_topic)
 
     else:
