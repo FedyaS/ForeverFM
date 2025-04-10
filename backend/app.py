@@ -287,7 +287,7 @@ def broadcastPlaybackState(playback, elapsed):
             with open(audio_path, "rb") as f:
                 audio_data = f.read()
                 socketio.emit("audio", {"data": audio_data, "file": filename})
-                print(f'Broadcasted audio {filename.split("backend/")[1].strip()} to all clients')
+                print(f'Broadcasted audio {filename.split("backend/")[-1].strip()} to all clients')
             
             last_sent_file = filename
             socketio.emit("transcript", {"data": audio_obj['text']})
@@ -329,7 +329,7 @@ def playbackManager():
                     if audio:
                         current_playback = {'audio': audio[0], 'start_time': time.time()}
                         #print(current_playback['audio'])
-                        print(f"Starting playback: {current_playback['audio']['filename'].split("backend/")[1]}")
+                        print(f"Starting playback: {current_playback['audio']['filename'].split("backend/")[-1]}")
             
             # Use this to exit the current_playback_lock so it doesn't have to keep waiting
             playback_snapshot = current_playback
