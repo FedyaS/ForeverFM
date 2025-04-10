@@ -188,7 +188,7 @@ def continousMakeAudio():
                 'speaker_name': script['speaker_name'],
                 'duration': duration,
                 'text': script['text'],
-                'filename': f'audio/{new_file_name}'
+                'filename': f'audio/{new_file_name}.wav'
             }
 
             with audio_lock:
