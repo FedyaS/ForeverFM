@@ -4,5 +4,8 @@ flask_cors
 dotenv
 soundfile
 flask_socketio
+requests
+gunicorn
+gevent-websocket
 pydub
 ffmpeg

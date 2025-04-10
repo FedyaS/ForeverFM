@@ -39,8 +39,8 @@ export default function About() {
         {/* Story */}
         <section style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <p className={styles.description}>
-          ForeverFM is a collaborative experiment born at Oregon State University's 🦫 BeaverHacks—where four students came together to explore the frontier of AI-driven storytelling.
-          We're exploring the frontier of language models, voice synthesis, and the vibe of collaborative creativity.
+          ForeverFM is a collaborative experiment born at Oregon State University&apos;s 🦫 BeaverHacks—where four students came together to explore the frontier of AI-driven storytelling.
+          We&apos;re exploring the frontier of language models, voice synthesis, and the vibe of collaborative creativity.
           </p>
 
           <p className={styles.description}>

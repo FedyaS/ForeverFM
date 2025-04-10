@@ -13,6 +13,6 @@ pip install -r requirements.txt
 python app.py
 ```
 
-App will be running at: [http://localhost:5001](http://localhost:5001)
+App will be running at: [https://flask-backend-z6zx.onrender.com](https://flask-backend-z6zx.onrender.com)
 
 ---

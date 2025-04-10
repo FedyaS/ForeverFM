@@ -2,6 +2,8 @@
 import { useState, useEffect, useRef } from "react";
 import styles from "./ChatBox.module.css";
 
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
 export default function ChatBox() {
   const [userPrompt, setUserPrompt] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
@@ -40,7 +42,7 @@ export default function ChatBox() {
     setStatusMessage("");
 
     try {
-      const response = await fetch("http://localhost:5001/chat-prompt", {
+      const response = await fetch(`${apiUrl}/chat-prompt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_prompt: userPrompt }),
