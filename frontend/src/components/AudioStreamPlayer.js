@@ -4,7 +4,10 @@ import Image from "next/image";
 import styles from "./AudioStreamPlayer.module.css";
 import io from "socket.io-client";
 
-export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/audio" }) {
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+console.log(apiUrl)
+
+export default function AudioStreamPlayer({ audioSrc = apiUrl }) {
   const [transcript, setTranscript] = useState("");
   const [position, setPosition] = useState({ elapsed: 0, duration: 0 });
   const [isPlaying, setIsPlaying] = useState(false);
@@ -88,7 +91,7 @@ export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/au
 
   useEffect(() => {
     // Connect to the WebSocket server
-    socketRef.current = io("http://localhost:5001", {
+    socketRef.current = io(apiUrl, {
       transports: ["websocket"],
       forceNew: true,
     });
