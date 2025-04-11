@@ -45,8 +45,9 @@ def getRandomTopic():
 
 def loadAnotherTopic() -> int:
     new_conv_topic = getRandomTopic()
-    with ST_lock:
-        count = ST.load_segments_from_topic(new_conv_topic)
+    #with ST_lock:
+    #    print("\tloadAnotherTopic():49 st_lock")
+    count = ST.load_segments_from_topic(new_conv_topic)
     print(f"{count} new segments loaded on {new_conv_topic}")
     return count
 
@@ -55,6 +56,7 @@ def continousMakeTranscript():
     while True:
         segment = None
         with ST_lock:
+            print("\t continuousMakeTranscript():59 st_lock")
             for i, s in enumerate(ST.segments):
                 if s.text is None:
                     segment = s
@@ -69,6 +71,7 @@ def continousMakeTranscript():
             
             new_script = generateContent.generateContent(context, current_topic, mock=MOCKING, mock_number=MOCK_NUMBER)
             with ST_lock:
+                print("\t continuousMakeTranscript():74 st_lock")
                 segment.speaker_name = new_script['speaker_name']
                 segment.text = new_script['text']
                 segment.mock_number = MOCK_NUMBER
@@ -83,6 +86,7 @@ def continousMakeAudio():
     while True:
         segment = None
         with ST_lock:
+            print("\t continuousMakeTranscript():89 st_lock")
             for s in ST.segments:
                 if s.audio_file is None:
                     segment = s
@@ -98,6 +102,7 @@ def continousMakeAudio():
             groqAudio.createAudio(segment.text, speaker_name, audio_path, MOCKING, segment.mock_number)
             
             with ST_lock:
+                print("\t continuousMakeTranscript():105 st_lock")
                 segment.add_audio_file(audio_path)
                 print(f"Generated audio for {segment.speaker_name} duration: {round(segment.duration, 2)} sec saved to: {new_file_name}")
         
@@ -114,11 +119,13 @@ def continousManageTopic():
         if new_up:
             print(f"Handling new user prompt from {new_up['user_name']} text: {new_up['text']}")
             with conv_topic_lock:
+                print("\t continuousManageTopic():122 conv_topic_lock")
                 current_topic = conv_topic
                 new_topic = generateContent.determineNewTopic(new_up['text'], MOCKING)
             
             if new_topic:
                 with ST_lock:
+                    print("\t continuousManageTopic():127 st_lock")
                     latest_segment = ST.get_first_segment()
                     latest_script = ([{'speaker_name': latest_segment.speaker_name, 'text': latest_segment.text}] if latest_segment else [])
                 
@@ -139,6 +146,7 @@ def continousManageTopic():
                         print(f'New Topic is set to: {new_topic}')
                     
                     with ST_lock:
+                        print("\t continuousManageTopic():148 st_lock")
                         ST.clearQ()
                         ST.add_segment(transition_segment)
                         for _ in range(INFLUENCE_DEGREE):
@@ -185,12 +193,14 @@ def playbackManager():
         
         try:
             with current_playback_lock:
+                print("\t current_playback_lock():196 current_playback_lock")
                 if current_playback:
                     elapsed = time.time() - current_playback['start_time']
                     duration = current_playback['segment'].duration
                     
                     if elapsed >= duration:
                         with ST_lock:
+                            print("\t playbackManager():202 st_lock")
                             if ST.segments:
                                 ST.segments.pop(0)
                                 if len(ST.segments) < MIN_Q_SIZE:
@@ -201,6 +211,7 @@ def playbackManager():
                 
                 if not current_playback:
                     with ST_lock:
+                        print("\t playbackManager():212 st_lock")
                         if ST.segments and ST.segments[0].audio_file is not None:
                             current_playback = {'segment': ST.segments[0], 'start_time': time.time()}
                             print(f"Starting playback: {ST.segments[0].audio_file}")
@@ -256,6 +267,7 @@ def handle_request_playback():
         else:
             print(f"{sid} no current_playback")
             with ST_lock:
+                print("\t handle_request_playback():268 st_lock")
                 print(f"{sid} acquired ST_lock")
                 if ST.segments and ST.segments[0].audio_file is not None:
                     segment = ST.segments[0]
