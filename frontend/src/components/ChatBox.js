@@ -1,15 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import Image from "next/image";
 import styles from "./ChatBox.module.css";
-
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function ChatBox() {
   const [userPrompt, setUserPrompt] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tokens, setTokens] = useState(5);
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -30,10 +26,6 @@ export default function ChatBox() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!userPrompt.trim()) return;
-    if (tokens <= 0) {
-      setStatusMessage("You're out of energy!");
-      return;
-    }
 
     const time = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const newMessage = {
@@ -44,13 +36,11 @@ export default function ChatBox() {
     };
 
     setMessages((prev) => [...prev, newMessage]);
-    setUserPrompt("") 
-    setTokens((prev) => prev - 1);
     setIsSubmitting(true);
     setStatusMessage("");
 
     try {
-      const response = await fetch(`${apiUrl}/chat-prompt`, {
+      const response = await fetch("http://localhost:5001/chat-prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_prompt: userPrompt }),
@@ -80,19 +70,13 @@ export default function ChatBox() {
 
   return (
     <div className={styles.wrapper}>
+      {/* Header */}
       <div className={styles.header}>
-        <div className={styles.headerRow}>
-          <div>
-            Live Chat<br />
-            <span>You: <span style={{ color: "#55ff99" }}>{username}</span></span>
-          </div>
-          <div className={styles.tokenDisplay}>
-            <Image src="/energy-token-1.svg" alt="token" width={16} height={16} />
-            <span>{tokens}</span>
-          </div>
-        </div>
+        Live Chat<br />
+        <span>You: <span style={{ color: "#55ff99" }}>{username}</span></span>
       </div>
 
+      {/* Message list */}
       <div ref={chatRef} className={styles.messageList}>
         {messages.map((msg) => (
           <div key={msg.id} className={styles.message}>
@@ -105,6 +89,7 @@ export default function ChatBox() {
         ))}
       </div>
 
+      {/* Form with embedded button */}
       <form onSubmit={handleSubmit} className={styles.form}>
         <input
           type="text"
@@ -119,12 +104,13 @@ export default function ChatBox() {
         <button
           type="submit"
           className={styles.button}
-          disabled={isSubmitting || tokens <= 0}
+          disabled={isSubmitting}
         >
           Chat
         </button>
       </form>
 
+      {/* Status message */}
       {statusMessage && (
         <p className={styles.status}>{statusMessage}</p>
       )}

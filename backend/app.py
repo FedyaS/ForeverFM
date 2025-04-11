@@ -92,6 +92,7 @@ def continousMakeAudio():
             with conv_topic_lock:
                 new_file_name = f'{conv_topic.strip().replace(" ","-")}{round(time.time())}'
             speaker_name = segment.speaker_name or random.choice(['Aaliyah', 'Chip'])
+            print(speaker_name)
             
             audio_path = os.path.join("audio", f"{new_file_name}.wav")
             groqAudio.createAudio(segment.text, speaker_name, audio_path, MOCKING, segment.mock_number)
