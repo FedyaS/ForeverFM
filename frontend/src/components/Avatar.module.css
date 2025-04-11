@@ -79,3 +79,13 @@
     color: #ccc;
   }
   
+  @media (max-width: 768px) {
+    .wrapper {
+      max-width: 100% !important;
+    }
+  
+    .card {
+      max-width: 100% !important;
+    }
+  }
+  

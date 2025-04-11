@@ -122,3 +122,9 @@ color: #aaa;
     text-align: justify;
   }
   
+  @media (max-width: 768px) {
+    .wrapper {
+      max-width: 100% !important;
+    }
+  }
+  
