@@ -93,8 +93,8 @@ export default function Home() {
   </h2>
   <p style={{ lineHeight: "1.6", marginTop: "1rem" }}>
     Real conversations. Real learning. Zero friction. Our AI hosts explore topics dynamically,
-    letting you dive deep or stay casual—all based on your curiosity. Whether it's finance, tech,
-    wellness, or gaming, you're just one click away from immersive learning.
+    letting you dive deep or stay casual—all based on your curiosity. Whether it&apos;s finance, tech,
+    wellness, or gaming, you&apos;re just one click away from immersive learning.
   </p>
   <ul style={{ marginTop: "1rem", paddingLeft: "1.25rem" }}>
     <li>Listen 24/7 to evolving expert-like discussions</li>
