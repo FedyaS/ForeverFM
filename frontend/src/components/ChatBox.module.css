@@ -1,15 +1,15 @@
 .wrapper {
-    background-color: #111;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    max-height: 540px;
-    /* min-width: 40rem; ✅ add this line */
-    overflow: hidden;
-    color: #eee;
-    font-size: 0.9rem;
-  }
+  background-color: #111;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 540px;
+  /* min-width: 40rem; ✅ add this line */
+  overflow: hidden;
+  color: #eee;
+  font-size: 0.9rem;
+}
 
 
 .header {
@@ -70,7 +70,7 @@ font-size: 0.9rem;
 
 .button {
 position: absolute;
-right: 0.9rem;
+right: .88rem;
 top: 50%;
 transform: translateY(-50%);
 height: 30px;
@@ -86,6 +86,9 @@ font-size: 0.8rem;
 
 .button:disabled {
 cursor: not-allowed;
+background-color: #555 !important;
+color: #999 !important;
+opacity: 0.7;
 }
 
 .status {
@@ -94,5 +97,17 @@ font-size: 0.8rem;
 color: #aaa;
 }
 
+.headerRow {
+display: flex;
+justify-content: space-between;
+align-items: center;
+}
 
-  
+.tokenDisplay {
+display: flex;
+align-items: center;
+gap: 6px;
+font-size: 0.9rem;
+font-weight: 600;
+color: #ffcf4d;
+}
