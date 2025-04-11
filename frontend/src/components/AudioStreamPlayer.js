@@ -4,9 +4,7 @@ import Image from "next/image";
 import styles from "./AudioStreamPlayer.module.css";
 import io from "socket.io-client";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-export default function AudioStreamPlayer({ audioSrc = `${apiUrl}/audio` }) {
+export default function AudioStreamPlayer({ audioSrc = "http://localhost:5001/audio" }) {
   const [transcript, setTranscript] = useState("");
   const [position, setPosition] = useState({ elapsed: 0, duration: 0 });
   const [isPlaying, setIsPlaying] = useState(false);
@@ -90,13 +88,15 @@ export default function AudioStreamPlayer({ audioSrc = `${apiUrl}/audio` }) {
 
   useEffect(() => {
     // Connect to the WebSocket server
-    socketRef.current = io(`${apiUrl}`, {
+    socketRef.current = io("http://localhost:5001", {
       transports: ["websocket"],
       forceNew: true,
     });
 
     socketRef.current.on("connect", () => {
       console.log("Connected to WebSocket");
+      socketRef.current.emit("request_playback");
+      console.log('Emitted request_playback')
     });
 
     socketRef.current.on("new_file", (data) => {
@@ -160,14 +160,14 @@ export default function AudioStreamPlayer({ audioSrc = `${apiUrl}/audio` }) {
         audioContextRef.current.close();
       }
     };
-  }, [isPlaying, playNextInQueue]);
+  }, []);
 
   // Effect to manage playback state
   useEffect(() => {
     if (isReady && isPlaying) {
       playNextInQueue();
     }
-  }, [isReady, isPlaying, playNextInQueue]);
+  }, [isReady, isPlaying]);
 
   // useEffect(() => {
   //   if (audioRef.current) {
