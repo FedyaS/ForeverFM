@@ -1,16 +1,19 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
+
 import threading
 import time
 import os
-from getWavFileDuration import get_wav_duration
-from flask_socketio import SocketIO, emit
-import groqAudio
-import generateContent
 import random
+import io
 import json
 from pydub import AudioSegment
-import io
+
+from getWavFileDuration import get_wav_duration
+import groqAudio
+import generateContent
+from Segment import SegmentsTracker, Segment
 
 # Initialize Flask app and CORS
 app = Flask(__name__)
@@ -33,6 +36,9 @@ audio = [] # [{speaker_name: '', duration: '', text: '', filename: ''}] # Newest
 current_playback = None  # Global playback state: {'audio': audio_obj, 'start_time': timestamp}
 last_sent_file = None
 
+ST = SegmentsTracker()
+ST.load_segments_from_topic(conv_topic)
+
 
 # Locks for thread safety
 scripts_lock = threading.Lock()
@@ -40,6 +46,7 @@ audio_lock = threading.Lock()
 conv_topic_lock = threading.Lock()
 user_prompts_lock = threading.Lock()
 current_playback_lock = threading.Lock()
+ST_lock = threading.Lock()
 
 def countSequentialWavs(base_name):
     i = 0
@@ -50,6 +57,15 @@ def countSequentialWavs(base_name):
         i += 1
     return i
 
+def getRandomTopic(ST):
+    topics:list = list()
+    with open(f"{BASE_DIR}/mock_data/LoopTopics.txt","r") as f:
+        lines:list = f.readlines()
+        for line in lines:
+            topics.append(line.strip())
+    
+    return random.choice(topics)
+
 # Load Initial Audios and Scripts
 def loadAnotherTopic() -> int:
     '''Loads a list of file_paths into audio[] and scripts[]. This function enables our program to run 24/7
@@ -59,46 +75,12 @@ def loadAnotherTopic() -> int:
     
     @return: # of things actually appended'''
 
-    topics:list = list()
-    with open(f"{BASE_DIR}/mock_data/LoopTopics.txt","r") as f:
-        lines:list = f.readlines()
-        for line in lines:
-            topics.append(line.strip())
-    for topic in topics:
-        if len(audio) > 0 and topic in audio[0]['filename']:
-            print(topic,"has been removed from next queue")
-            topics.remove(topic)
-
-    fp = random.choice(topics)
-    topic_len = countSequentialWavs(fp)
-    audio_fp = "mock_data/audio/"
-    scripts_fp = "mock_data/scripts/"
-
-    c=0
-    for i in range(topic_len):
-        new_script:dict = None
-        with open(os.path.join(BASE_DIR, "mock_data", "scripts", fp, f"{fp}{i}.json"),"r") as f:
-            new_script = json.load(f)
-            new_script['mock_number'] = MOCK_NUMBER
-            new_script['is_audio_generated'] = True
-
-            with scripts_lock:
-                scripts.append(new_script)
-
-            audio_fn = os.path.join(BASE_DIR, "mock_data", "audio", fp, f"{fp}{i}.wav")
-            duration = get_wav_duration(audio_fn)
-            new_audio = {
-                'speaker_name': new_script['speaker_name'],
-                'duration': duration,
-                'text': new_script['text'],
-                'filename': audio_fn
-            }
-
-            with audio_lock:
-                audio.append(new_audio)
-
-            c+=1
-    return c
+    new_conv_topic = getRandomTopic(ST)
+    with ST_lock:
+        count = ST.load_segments_from_topic(new_conv_topic)
+    
+    print(f"{count} new segments loaded on {new_conv_topic}")
+    return count
 
 
 # Thread functions
