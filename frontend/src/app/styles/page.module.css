@@ -215,3 +215,20 @@ a.secondary {
   max-width: 100%;
   height: auto;
 }
+
+.infoLayout {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .infoLayout {
+    flex-direction: column-reverse;
+    align-items: center;
+  }
+}
+
