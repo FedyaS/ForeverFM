@@ -45,10 +45,6 @@ class SegmentsTracker:
     
     def add_segment(self, segment):
         self.segments.append(segment)
-        if len(self.segments) > 8:  # MAX_Q_SIZE
-            popped = self.segments.pop(0)
-            if popped.audio_file and os.path.exists(popped.audio_file):
-                os.remove(popped.audio_file)  # Clean up mock audio
     
     def get_first_segment(self):
         return self.segments[0] if self.segments else None
