@@ -196,12 +196,8 @@ def generateNewTopicContent(user_prompt_text, user_name, scripts, old_conv_topic
         print("Groq Response JSON:", json_data)  # Debug print
 
         message = json_data['choices'][0]['message']['content']
-        lines = message.strip().split("\n", 1)
-        if len(lines) == 2 and ":" in lines[0]:
-            speaker, text = lines[0].split(":", 1)
-            return {"speaker_name": speaker.strip(), "text": text.strip()}
-        else:
-            return {"speaker_name": "AI Narrator", "text": message.strip()}
+        return {"speaker_name": random.choice(["Aaliyah","Chip"]), "text": message.strip()}
+
     except Exception as e:
         print("Error parsing Groq response:", e)
         print("Raw response text:", response.text)

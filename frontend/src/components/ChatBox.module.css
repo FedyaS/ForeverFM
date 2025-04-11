@@ -70,7 +70,7 @@ font-size: 0.9rem;
 
 .button {
 position: absolute;
-right: .88rem;
+right: 0.9rem;
 top: 50%;
 transform: translateY(-50%);
 height: 30px;
@@ -85,31 +85,13 @@ font-size: 0.8rem;
 }
 
 .button:disabled {
-  cursor: not-allowed;
-  background-color: #555 !important;
-  color: #999 !important;
-  opacity: 0.7;
+cursor: not-allowed;
 }
 
 .status {
 padding: 0.5rem 1rem;
 font-size: 0.8rem;
 color: #aaa;
-}
-
-.headerRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.tokenDisplay {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #ffcf4d;
 }
 
 
