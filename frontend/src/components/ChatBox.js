@@ -4,7 +4,7 @@ import Image from "next/image";
 import styles from "./ChatBox.module.css";
 import Cookies from "js-cookie";
 
-const MAX_TOKENS = 5;
+const MAX_TOKENS = 3; // "Greed is the lack of confidence of one's own ability to create." -Vanna Bonta
 const COOKIE_KEY = "usedTokens";
 const COOKIE_TIMESTAMP = "lastTokenReset";
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
