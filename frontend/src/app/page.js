@@ -11,35 +11,45 @@ const topics = [
     slug: "gaming",
     description: "Game dev, eSports, narrative design, and play culture.",
     bgColor: "#ffffff00",
+    realColor: "#a930ff",
     image: "/categories/category-gaming.svg",
+    filter: "invert(.6) sepia(1) contrast(15) hue-rotate(259deg)",
   },
   {
     name: "Technology",
     slug: "technology",
     description: "AI, software, gadgets, and how it all connects.",
     bgColor: "#ffffff00",
+    realColor: "#6c6ef1",
     image: "/categories/category-tech.svg",
+    filter: "invert(0.5) sepia(1) contrast(15) brightness(0.5) hue-rotate(179deg)",
   },
   {
     name: "Finance",
     slug: "finance",
     description: "Markets, money, investing, and economic ideas.",
     bgColor: "#ffffff00",
+    realColor: "#7ecb00",
     image: "/categories/category-finance.svg",
+    filter: "invert(0.6) sepia(1) contrast(15) brightness(3) hue-rotate(34deg)",
   },
   {
     name: "Health & Wellness",
     slug: "health",
     description: "Fitness, mental wellness, nutrition, and biohacking.",
     bgColor: "#ffffff00",
+    realColor: "#ff008e",
     image: "/categories/category-health.svg",
+    filter: "invert(0.6) sepia(1) contrast(15) hue-rotate(315deg)",
   },
   {
     name: "Real Estate",
     slug: "real-estate",
     description: "Housing, land, and future trends in living spaces.",
     bgColor: "#ffffff00",
+    realColor: "#ffb300",
     image: "/categories/category-real-estate.svg",
+    filter: "invert(0.6) sepia(1) contrast(12) brightness(3) hue-rotate(336deg)",
   },
 ];
 
@@ -67,8 +77,8 @@ export default function Home() {
           <div className="scrollRowWrapper">
             <div className="scrollRow">
               {topics.map((topic) => (
-                <div key={topic.slug} className="card">
-                  <div className="thumbnail" style={{ backgroundColor: topic.bgColor }}>
+                <div key={topic.slug} className="card" style ={{color: topic.realColor}}>
+                  <div className="thumbnail" style={{ backgroundColor: topic.bgColor, filter: topic.filter}}>
                     {topic.image && (
                       <img
                         src={topic.image}
