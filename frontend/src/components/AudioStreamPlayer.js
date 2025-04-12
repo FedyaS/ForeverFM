@@ -107,6 +107,22 @@ export default function AudioStreamPlayer({ audioSrc = apiUrl }) {
     });
 
     socketRef.current.on("audio", (data) => {
+      if (data?.data) {
+        try {
+          const binary = atob(data.data);
+          const len = binary.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          decodeAndQueue(bytes.buffer);
+        } catch (e) {
+          console.error("Error decoding base64 audio", e);
+        }
+      }
+    });
+
+    /*socketRef.current.on("audio", (data) => {
       console.log("Received audio event");
     
       if (data instanceof Blob) {
@@ -122,7 +138,7 @@ export default function AudioStreamPlayer({ audioSrc = apiUrl }) {
       } else {
         console.warn("Unrecognized audio data format", data);
       }
-    });
+    });*/
     
     function decodeAndQueue(arrayBuffer) {
       if (!audioContextRef.current) {
