@@ -10,7 +10,7 @@ const topics = [
     name: "Gaming",
     slug: "gaming",
     description: "Game dev, eSports, narrative design, and play culture.",
-    bgColor: "#ffffff00",
+    bg: "",
     realColor: "#a930ff",
     image: "/categories/category-gaming.svg",
     filter: "invert(.6) sepia(1) contrast(15) hue-rotate(259deg)",
@@ -19,16 +19,16 @@ const topics = [
     name: "Technology",
     slug: "technology",
     description: "AI, software, gadgets, and how it all connects.",
-    bgColor: "#ffffff00",
+    bg: "",
     realColor: "#6c6ef1",
     image: "/categories/category-tech.svg",
-    filter: "invert(0.5) sepia(1) contrast(15) brightness(0.5) hue-rotate(179deg)",
+    filter: "invert(0.6) sepia(1) contrast(15) brightness(0.7) hue-rotate(180deg)",
   },
   {
     name: "Finance",
     slug: "finance",
     description: "Markets, money, investing, and economic ideas.",
-    bgColor: "#ffffff00",
+    bg: "",
     realColor: "#7ecb00",
     image: "/categories/category-finance.svg",
     filter: "invert(0.6) sepia(1) contrast(15) brightness(3) hue-rotate(34deg)",
@@ -37,16 +37,16 @@ const topics = [
     name: "Health & Wellness",
     slug: "health",
     description: "Fitness, mental wellness, nutrition, and biohacking.",
-    bgColor: "#ffffff00",
+    bg: "",
     realColor: "#ff008e",
     image: "/categories/category-health.svg",
-    filter: "invert(0.6) sepia(1) contrast(15) hue-rotate(315deg)",
+    filter: "invert(0.6) sepia(1) contrast(15) brightness(3) hue-rotate(277deg)",
   },
   {
     name: "Real Estate",
     slug: "real-estate",
     description: "Housing, land, and future trends in living spaces.",
-    bgColor: "#ffffff00",
+    bg: "",
     realColor: "#ffb300",
     image: "/categories/category-real-estate.svg",
     filter: "invert(0.6) sepia(1) contrast(12) brightness(3) hue-rotate(336deg)",
@@ -77,8 +77,8 @@ export default function Home() {
           <div className="scrollRowWrapper">
             <div className="scrollRow">
               {topics.map((topic) => (
-                <div key={topic.slug} className="card" style ={{color: topic.realColor}}>
-                  <div className="thumbnail" style={{ backgroundColor: topic.bgColor, filter: topic.filter}}>
+                <div key={topic.slug} className="card" style={{color: topic.realColor, background: "linear-gradient(rgba(0, 0, 0, 0), rgba(255, 255, 255, 0.33))", filter: topic.filter}}>
+                  <div className="thumbnail" style={{ background: topic.bg, filter: topic.filter}}>
                     {topic.image && (
                       <img
                         src={topic.image}
