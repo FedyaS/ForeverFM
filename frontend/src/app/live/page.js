@@ -55,10 +55,13 @@ export default function Stream() {
         </div>
         
         {/* Avatar Widget */}
-        <div style={{ marginTop: "1rem", marginBottom: "1rem", display: "-webkit-flex",  justifyContent: "space-between",}}> {/* TODO: Restructure divs to avoid this*/}
+
+        <div className={styles.infoLayout} style={{ marginTop: "1rem", marginBottom: "1rem" }}>
           <Avatars />
           <Description />
         </div>
+
+
 
         {/* Navigation */}
         <div className={styles.ctas} style={{ marginTop: "2rem" }}>
