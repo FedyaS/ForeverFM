@@ -129,7 +129,7 @@ def continousManageTopic():
             if new_topic:
                 with ST_lock:
                     if DEBUG: print("\t continuousManageTopic():127 st_lock")
-                    latest_segment = ST.get_first_segment()
+                    latest_segment = ST.get_first_segment() # TODO make this to be smart about which segments it gives for context
                     latest_script = ([{'speaker_name': latest_segment.speaker_name, 'text': latest_segment.text}] if latest_segment else [])
                 
                 transition_script = generateContent.generateNewTopicContent(
@@ -160,6 +160,8 @@ def continousManageTopic():
                         for _ in range(INFLUENCE_DEGREE):
                             ST.add_segment(Segment(conv_topic=new_topic))
                         print(f'Segments is now {len(ST.segments)} long')
+                        if len(ST.segments) < MIN_Q_SIZE:
+                            loadAnotherTopic()
                     
                     broadcastNewTopic(new_topic)
         
