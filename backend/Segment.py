@@ -1,6 +1,7 @@
 import json
 import os
 from getWavFileDuration import get_wav_duration
+import time
 
 class Segment:
     def __init__(self, conv_topic=None, speaker_name=None, text=None, audio_file=None, duration=None, mock_number=None):
@@ -13,7 +14,7 @@ class Segment:
     
     def add_audio_file(self, audio_file):
         self.audio_file = audio_file
-        self.duration = get_wav_duration(audio_file)
+        self.duration = get_wav_duration(audio_file) # This is in seconds!!!
     
     def load_from_mock(self, conv_topic, count=0) -> bool:
         conv_topic = conv_topic.replace(' ', '-')  # Fix the topic for paths
@@ -75,3 +76,38 @@ class SegmentsTracker:
         """
         if self.segments:
             self.segments = self.segments[:1]
+    
+    def clearQBeyondXSeconds(self, X: int, current_playback):
+        """
+        Smart Q clearing.
+        Clears all the segments beyond the minimum required to play X more seconds of audio.
+
+        EX:
+        current_time: 209
+        current_playback: {"segment": Segment(duration: 10), "start_time": 200}
+        segments = [{duration: 10}, {duration: 5}, {duration: 3}, {duration: 4}, {duration: 5}]
+        clearQBeyondXSeconds(10)
+
+        seg1 +1 more seconds = 1 
+        seg2 +5 more seconds = 6
+        seg3 +3 more seconds = 9
+        seg4 +4 more seconds = 13
+        seg5 +5 more seconds XXX Deleted XXX
+        """
+        if self.segments:
+            s0 = self.segments[0]
+            
+            time_passed = 0
+            if current_playback:
+                time_passed = time.time() - current_playback["start_time"]
+
+            seconds_in_q = max(0, s0.duration - time_passed)
+            new_q = [s0]
+            i = 1
+            while seconds_in_q < X and i < len(self.segments):
+                new_q.append(self.segments[i])
+                seconds_in_q += self.segments[i].duration
+                i += 1
+            
+            self.segments = new_q
+

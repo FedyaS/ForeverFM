@@ -148,9 +148,14 @@ def continousManageTopic():
                         conv_topic = new_topic
                         print(f'New Topic is set to: {new_topic}')
                     
+                    cp = None
+                    with current_playback_lock:
+                        cp = current_playback
+
                     with ST_lock:
                         if DEBUG: print("\t continuousManageTopic():148 st_lock")
-                        ST.clearQ()
+                        # ST.clearQ()
+                        ST.clearQBeyondXSeconds(35, cp)
                         ST.add_segment(transition_segment)
                         for _ in range(INFLUENCE_DEGREE):
                             ST.add_segment(Segment(conv_topic=new_topic))
