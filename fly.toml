@@ -1,0 +1,29 @@
+# fly.toml file for the ForeverFM app
+
+# App name should be a simple string, not an object
+app = "foreverfm"  # Your app name
+
+# Docker build configuration
+[build]
+  dockerfile = "./backend/Dockerfile"  # Path to your Dockerfile
+
+# Configuring services
+[[services]]
+  internal_port = 5001  # The port your Flask app is running on
+
+  # Expose HTTP and HTTPS ports
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+# Autoscaling settings (optional)
+[services.autoscaling]
+  min_instances = 1
+  max_instances = 3
+
+[[services.tls_options]]
+  min_version = "tls1.2"  # Ensure TLS 1.2 or higher for security

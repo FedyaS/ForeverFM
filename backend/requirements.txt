@@ -1,11 +1,12 @@
 Flask
 groq
 flask_cors
-dotenv
+python-dotenv
 soundfile
 flask_socketio
 requests
 gunicorn
+gevent
 gevent-websocket
 pydub
-ffmpeg
+ffmpeg-python
