@@ -27,3 +27,7 @@ export default function RootLayout({ children }) {
     </html>
   );
 }
+
+export const generateStaticParams = async () => {
+  return [{}];
+};
