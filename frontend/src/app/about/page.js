@@ -2,6 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import styles from "../styles/page.module.css";
 
+export const generateStaticParams = async () => {
+  return [{}];
+};
+
 export default function About() {
   return (
     <div className={styles.page}>
